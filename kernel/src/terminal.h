@@ -4,9 +4,7 @@
  */
 #pragma once
 #include "stdint.h"
-
-#define TERMINAL_WIDTH 80
-#define TERMINAL_HEIGTH 25
+#include "stddef.h"
 
 #define VGA_BLACK 0
 #define VGA_BLUE 1
@@ -26,6 +24,13 @@
 #define VGA_YELLOW 14
 #define VGA_WHITE 15
 
+extern u16 bios_font_segment;
+extern u16 bios_font_offset;
+extern u8 *font;
+extern int terminal_width;
+extern int terminal_height;
+
+void terminal_init(void);
 void terminal_set_color(u8 fg, u8 bg);
 void terminal_putchar_at(char c, int x, int y);
 void terminal_putchar(char c);

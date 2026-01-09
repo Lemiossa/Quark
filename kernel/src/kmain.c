@@ -4,6 +4,7 @@
  */
 #include "stdint.h"
 #include "terminal.h"
+#include "graphics.h"
 
 const char *hex_chars = "0123456789abcdef";
 
@@ -105,10 +106,11 @@ void kernel_panic(char *str) {
 
 // Func principal do kernel
 void kmain(void) {
+	terminal_init();
 	terminal_set_color(VGA_LIGHT_GRAY, VGA_BLACK);
 	terminal_clear();
 
-	terminal_putstring("Kernel iniciado!\n");
+	terminal_putstring("Hello World");
 
 	for (;;)
 		__asm__ volatile("hlt");

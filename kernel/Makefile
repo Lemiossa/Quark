@@ -26,7 +26,9 @@ SRC := \
 		  entry.S \
 		  kmain.c \
 		  string.c \
-		  terminal.c
+		  terminal/terminal.c \
+		  terminal/char.c \
+		  graphics.c
 
 SRC := $(addprefix $(SRC_DIR)/,$(SRC))
 

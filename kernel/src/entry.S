@@ -15,6 +15,42 @@ _start:
 	movw %ax, %ss
 	movw $0xffff, %sp
 
+	// Preparar algumas coisas antes do modo protegido
+	// COMEÇO FONTE
+	pushw %bp
+	movw %es, %ax
+	pushw %ax
+
+	movw $0x1130, %ax
+	movb $03, %bh
+	int $0x10
+
+	movw %es, bios_font_segment
+	movw %bp, bios_font_offset
+
+	popw %ax
+	movw %ax, %es
+	popw %bp
+	// FIM FONTE
+
+	// COMEÇO VBE MODE
+	movw $0x4f01, %ax
+	movw $0x101, %cx
+	movw $vbe_mode_info, %di
+	int $0x10
+	cmpw $0x4f, %ax
+	je vbe_ok
+	movb $0, vbe_supported
+	movw $0x1112, %ax
+	int $0x10
+	jmp after_vbe
+vbe_ok:
+	movw $0x4f02, %ax
+	movw $0x4101, %bx
+	int $0x10
+after_vbe:
+	// FIM VBE MODE
+
 	inb $0x92, %al
 	orb $2, %al
 	outb %al, $0x92
@@ -29,6 +65,16 @@ _start:
 
 hang:
 	jmp hang
+
+.global bios_font_segment
+.global bios_font_offset
+bios_font_segment: .word 0
+bios_font_offset: .word 0
+
+.global vbe_mode_info
+vbe_mode_info: .space 256
+.global vbe_supported
+vbe_supported: .byte 1
 
 .code32
 _start32:
