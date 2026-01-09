@@ -107,10 +107,11 @@ void kernel_panic(char *str) {
 // Func principal do kernel
 void kmain(void) {
 	terminal_init();
-	terminal_set_color(VGA_LIGHT_GRAY, VGA_BLACK);
+	terminal_set_color(VGA_WHITE, VGA_BLACK);
 	terminal_clear();
 
-	terminal_putstring("Hello World");
+	terminal_putstring("Terminal initialized!\n");
+	terminal_putstring("Hello World\n");
 
 	for (;;)
 		__asm__ volatile("hlt");

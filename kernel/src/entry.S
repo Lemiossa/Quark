@@ -6,6 +6,8 @@
 .section .text.entry
 .extern kmain
 
+#include "kdefs.h"
+
 .global _start
 _start:
 	cli
@@ -22,7 +24,7 @@ _start:
 	pushw %ax
 
 	movw $0x1130, %ax
-	movb $03, %bh
+	movb $KERNEL_FONT, %bh
 	int $0x10
 
 	movw %es, bios_font_segment
@@ -33,20 +35,25 @@ _start:
 	popw %bp
 	// FIM FONTE
 
+#ifndef KERNEL_VESA_MODE
+	jmp vbe_unsupported
+#endif
+
 	// COMEÇO VBE MODE
 	movw $0x4f01, %ax
-	movw $0x101, %cx
+	movw $KERNEL_VESA_MODE, %cx
 	movw $vbe_mode_info, %di
 	int $0x10
 	cmpw $0x4f, %ax
 	je vbe_ok
+vbe_unsupported:
 	movb $0, vbe_supported
 	movw $0x1112, %ax
 	int $0x10
 	jmp after_vbe
 vbe_ok:
 	movw $0x4f02, %ax
-	movw $0x4101, %bx
+	movw $KERNEL_VESA_MODE | 0x4000, %bx
 	int $0x10
 after_vbe:
 	// FIM VBE MODE

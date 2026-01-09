@@ -30,6 +30,7 @@ extern u8 *font;
 extern int terminal_width;
 extern int terminal_height;
 
+void terminal_draw_framebuffer(void);
 void terminal_init(void);
 void terminal_set_color(u8 fg, u8 bg);
 void terminal_putchar_at(char c, int x, int y);
@@ -37,3 +38,4 @@ void terminal_putchar(char c);
 void terminal_putstring(char *s);
 void terminal_clear(void);
 void terminal_set_cursor_position(int x, int y);
+

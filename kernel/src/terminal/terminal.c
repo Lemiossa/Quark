@@ -9,7 +9,7 @@
 #include "../graphics.h"
 #include "char.h"
 
-struct vga_entry {
+struct char_entry {
 	u8 ch;
 	u8 cl;
 } __attribute__((packed));
@@ -21,8 +21,13 @@ u8 *font = NULL;
 int terminal_width = 80;
 int terminal_height = 50;
 
-typedef struct vga_entry vga_entry_t;
-volatile vga_entry_t *vga_buffer = (volatile vga_entry_t *)0xb8000;
+#define VGA_MEM 0xb8000
+
+#define TERMINAL_MAX_WIDTH 100
+#define TERMINAL_MAX_HEIGHT 80
+
+typedef struct char_entry char_entry_t;
+volatile char_entry_t buffer[TERMINAL_MAX_HEIGHT * TERMINAL_MAX_WIDTH] = {0};
 
 int cursor_x_position = 0;
 int cursor_y_position = 0;
@@ -30,7 +35,7 @@ u8 current_color = 0x07;
 
 // Muda a posição do cursor visual do terminal
 void terminal_set_cursor_visual_position(int x, int y) {
-	if (x > terminal_width || y > terminal_height)
+	if (x > terminal_width || y > terminal_height || vbe_supported)
 		return;
 	int pos = y * terminal_width + x;
 
@@ -49,6 +54,20 @@ void terminal_set_cursor_position(int x, int y) {
 	terminal_set_cursor_visual_position(x, y);
 }
 
+// Desenha todo o terminal caso seja grafico
+void terminal_draw_framebuffer(void) {
+	if (vbe_supported) {
+		for (int y = 0; y < terminal_height; y++)  {
+			for (int x = 0; x < terminal_width; x++) {
+				int pos = y * terminal_width + x;
+				draw_char(x, y, buffer[pos].ch, buffer[pos].cl & 0xf, (buffer[pos].cl >> 4) & 0xf);
+			}
+		}
+	} else {
+		memcpy((void *)VGA_MEM, (void *)buffer, terminal_height * terminal_width * 2);
+	}
+}
+
 // Seta a cor atual do VGA
 void terminal_set_color(u8 fg, u8 bg) { current_color = ((bg << 4) | fg); }
 
@@ -56,13 +75,9 @@ void terminal_set_color(u8 fg, u8 bg) { current_color = ((bg << 4) | fg); }
 void terminal_putchar_at(char c, int x, int y) {
 	if (x < 0 || y < 0 || x >= terminal_width || y >= terminal_height)
 		return;
-	if (!vbe_supported) {
-		int pos = y * terminal_width + x;
-		vga_buffer[pos].ch = c;
-		vga_buffer[pos].cl = current_color;
-	} else {
-		draw_char(x, y, c, current_color & 0xf, (current_color >> 4) & 0xf);
-	}
+	int pos = y * terminal_width + x;
+	buffer[pos].ch = c;
+	buffer[pos].cl = current_color;
 }
 
 // Imprime um caractere na pos atual
@@ -89,7 +104,7 @@ void terminal_putchar(char c) {
 
 	// scroll
 	if (cursor_y_position >= terminal_height) {
-		memcpy((void *)vga_buffer, (void *)(vga_buffer + terminal_width),
+		memcpy((void *)buffer, (void *)(buffer + terminal_width),
 			   (terminal_height - 1) * terminal_width * 2);
 		cursor_y_position = terminal_height - 1;
 		cursor_x_position = 0;
@@ -99,7 +114,7 @@ void terminal_putchar(char c) {
 		}
 	}
 
-	if (vbe_supported) terminal_set_cursor_visual_position(cursor_x_position, cursor_y_position);
+	terminal_set_cursor_visual_position(cursor_x_position, cursor_y_position);
 }
 
 // Imprime uma string no terminal
@@ -107,16 +122,21 @@ void terminal_putstring(char *s) {
 	while (*s) {
 		terminal_putchar(*s++);
 	}
+	terminal_draw_framebuffer();
 }
 
 // Limpa o terminal
 void terminal_clear(void) {
-	for (int y = 0; y < terminal_height; y++)
-		for (int x = 0; x < terminal_width; x++)
+	for (int y = 0; y < terminal_height; y++) {
+		for (int x = 0; x < terminal_width; x++) {
 			terminal_putchar_at(' ', x, y);
+		}
+	}
+
 	cursor_x_position = 0;
 	cursor_y_position = 0;
 	terminal_set_cursor_visual_position(0, 0);
+	terminal_draw_framebuffer();
 }
 
 // Inicia o sistema de terminal
