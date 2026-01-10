@@ -17,10 +17,9 @@ OBJCOPY ?= objcopy
 
 CFLAGS := -m32 -std=c99 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
 		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
-		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
-			-ffunction-sections -fdata-sections
-
-LDFLAGS := -melf_i386 -T$(LINKER) -nostdlib -static --gc-sections -s
+		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437
+LDFLAGS := -T$(LINKER) -nostdlib -static
+LIBS := -lgcc
 
 TARGET_FILE := $(BIN_DIR)/$(notdir $(TARGET))
 
@@ -59,7 +58,7 @@ clean:
 $(TARGET_FILE): $(OBJ)
 	@mkdir -p $(dir $@)
 	@echo "  LD        $@.elf"
-	@$(LD) $(LDFLAGS) -o $@.elf $^
+	@$(CC) $(LDFLAGS) -o $@.elf $^ $(LIBS)
 	@echo "  OBJCOPY   $@"
 	@$(OBJCOPY) -O binary $@.elf $@
 	@SIZE=$$(stat -c %s $@); \

@@ -18,6 +18,13 @@ KERNEL_SIZE := $(BUILD_DIR)/bin/kernel/kernel.bin.sectors
 SFDISK := /sbin/sfdisk
 MKFS := /sbin/mkfs.fat
 
+CC := i686-elf-gcc
+LD := i686-elf-ld
+OBJCOPY := i686-elf-objcopy
+export CC
+export LD
+export OBJCOPY
+
 all: $(IMAGE_FILE)
 
 clean:
