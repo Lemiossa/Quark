@@ -15,20 +15,26 @@ CC ?= gcc
 LD ?= ld
 OBJCOPY ?= objcopy
 
-CFLAGS := -m32 -std=c99 -O0 -g -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
+CFLAGS := -m32 -std=c99 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
 		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
-		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
-LDFLAGS := -melf_i386 -T$(LINKER) -nostdlib -static
+		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
+			-ffunction-sections -fdata-sections
+
+LDFLAGS := -melf_i386 -T$(LINKER) -nostdlib -static --gc-sections -s
 
 TARGET_FILE := $(BIN_DIR)/$(notdir $(TARGET))
 
 SRC := \
 		  entry.S \
-		  kmain.c \
+			interrupts.S \
+		  idt.c \
+			pic.c \
+			kmain.c \
 		  string.c \
 		  terminal/terminal.c \
 		  terminal/char.c \
-		  graphics.c
+		  graphics.c \
+		  panic.c
 
 SRC := $(addprefix $(SRC_DIR)/,$(SRC))
 

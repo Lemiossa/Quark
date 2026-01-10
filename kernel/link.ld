@@ -6,7 +6,7 @@ PHDRS {
 }
 
 SECTIONS {
-	. = 0x8000;
+	. = 0x7e00;
 
 	.text : {
 		*(.text.entry)

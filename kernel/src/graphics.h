@@ -3,8 +3,8 @@
  * Criado por Matheus Leme Da Silva
  */
 #pragma once
-#include "stdint.h"
 #include "kdefs.h"
+#include "stdint.h"
 
 #if KERNEL_VESA_MODE == 0x100
 #define VIDEO_MODE_WIDTH 640
