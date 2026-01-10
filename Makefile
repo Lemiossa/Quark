@@ -36,17 +36,15 @@ bootloader: kernel
 	@$(MAKE) -C $(CURDIR)/bootloader TARGET_DIR=$(BUILD_DIR) TARGET=$(notdir $(BOOTLOADER)) TO_LOAD=$(shell cat $(KERNEL_SIZE))
 
 qemu: $(IMAGE_FILE)
-	@echo "  QEMU      HDA=$< M=16"
-	@qemu-system-i386 -hda $< -m 16
+	@echo "  QEMU      $<"
+	@qemu-system-i386 -hda $< -m 16M -enable-kvm
 
 dqemu: $(IMAGE_FILE)
 	@echo "  GDB       .gdbinit"
-	@echo "target remote | qemu-system-i386 -hda $(IMAGE_FILE) -m 16 -gdb stdio -S" > .gdbinit
+	@echo "target remote | qemu-system-i386 -hda $(IMAGE_FILE) -m 16M -gdb stdio -S -no-reboot" > .gdbinit
 	@echo "set architecture i386:intel" >> .gdbinit
 	@echo "set disassembly-flavor intel" >> .gdbinit
 	@echo "add-symbol-file $(KERNEL).elf 0x8000" >> .gdbinit
-	@echo "layout asm" >> .gdbinit
-	@echo "layout regs" >> .gdbinit
 	@gdb -x .gdbinit
 
 $(IMAGE_FILE): bootloader

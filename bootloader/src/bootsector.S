@@ -12,7 +12,7 @@
 #endif
 
 #ifndef LOAD_ADDR
-#define LOAD_ADDR 0x8000
+#define LOAD_ADDR 0x7e00
 #endif
 
 .global _start
