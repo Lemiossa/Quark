@@ -2,7 +2,8 @@
  * isr.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef ISR_H
+#define ISR_H
 #include "kdefs.h"
 
 extern void isr_0(void);
@@ -520,3 +521,5 @@ void isr_init(void) {
   idt_set_gate(254, isr_254, KERNEL_CODE_SELECTOR, 0x8e);
   idt_set_gate(255, isr_255, KERNEL_CODE_SELECTOR, 0x8e);
 }
+
+#endif // ISR_H

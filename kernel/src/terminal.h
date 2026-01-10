@@ -2,7 +2,8 @@
  * terminal.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef TERMINAL_H
+#define TERMINAL_H
 #include "stdint.h"
 #include "stddef.h"
 
@@ -39,3 +40,5 @@ void terminal_putstring(char *s);
 void terminal_clear(void);
 void terminal_set_cursor_position(int x, int y);
 
+
+#endif // TERMINAL_H

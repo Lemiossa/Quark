@@ -2,7 +2,8 @@
  * ports.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef PORTS_H
+#define PORTS_H
 #include "stdint.h"
 
 // Envia val para port
@@ -18,3 +19,5 @@ static inline u8 inb(u16 port) {
 }
 
 static inline void io_wait(void) { outb(0x80, 0); }
+
+#endif // PORTS_H

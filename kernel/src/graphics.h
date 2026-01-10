@@ -2,7 +2,8 @@
  * graphics.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
 #include "kdefs.h"
 #include "stdint.h"
 
@@ -22,3 +23,5 @@
 extern u8 vbe_supported;
 
 void put_pixel(int x, int y, u8 color);
+
+#endif // GRAPHICS_H

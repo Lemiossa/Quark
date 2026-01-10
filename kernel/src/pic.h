@@ -2,7 +2,8 @@
  * pic.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef PIC_H
+#define PIC_H
 #include "stdint.h"
 
 #define PIC1_COMMAND 0x20
@@ -15,3 +16,5 @@
 
 void pic_send_eoi(u8 irq);
 void pic_remap(void);
+
+#endif // PIC_H

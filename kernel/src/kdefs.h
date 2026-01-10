@@ -2,7 +2,8 @@
  * kdefs.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef KDEFS_H
+#define KDEFS_H
 
 #define KERNEL_CODE_SELECTOR 0x08
 #define KERNEL_DATA_SELECTOR 0x10
@@ -21,3 +22,5 @@
 
 // Aonde a tabela de memoria do E820 vai ficar
 #define E820_LOC 0x80000
+
+#endif // KDEFS_H

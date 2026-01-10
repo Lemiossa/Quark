@@ -2,7 +2,8 @@
  * idt.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef IDT_H
+#define IDT_H
 #include "stdint.h"
 
 struct regs {
@@ -13,3 +14,5 @@ struct regs {
 } __attribute__((packed));
 
 void idt_init(void);
+
+#endif // IDT_H

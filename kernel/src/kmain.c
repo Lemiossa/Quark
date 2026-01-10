@@ -5,8 +5,11 @@
 #include "idt.h"
 #include "kdefs.h"
 #include "pic.h"
+#include "stdarg.h"
 #include "string.h"
 #include "terminal.h"
+
+int vsprintf(char *s, const char *format, va_list args) {}
 
 static const char *hex_chars = "0123456789abcdef";
 

@@ -2,7 +2,8 @@
  * char.h
  * Criado por Matheus Leme Da Silva
  */
-#pragma once
+#ifndef CHAR_H
+#define CHAR_H
 #include "../stdint.h"
 #include "../kdefs.h"
 
@@ -16,3 +17,5 @@
 #endif
 
 void draw_char(int x, int y, char c, u8 fg, u8 bg);
+
+#endif // CHAR_H
