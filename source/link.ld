@@ -17,7 +17,10 @@ SECTIONS {
 		*(.data)
 	} :data
 
+	. = 0x100000;
+	bss_start = .;
 	.bss : {
 		*(.bss)
 	} :data
+	bss_end = .;
 }

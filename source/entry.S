@@ -8,6 +8,10 @@
 
 #include "kdefs.h"
 
+#ifndef KERNEL_STACK_SIZE
+#error "Need KERNEL_STACL_SIZE"
+#endif
+
 .global _start
 _start:
 	cli
@@ -125,6 +129,8 @@ e820_end:
 .global e820_table_count
 e820_table_count: .byte 0
 
+.extern bss_start
+.extern bss_end
 
 .code32
 _start32:
@@ -135,7 +141,13 @@ _start32:
 	movw %ax, %fs
 	movw %ax, %gs
 	movw %ax, %ss
-	movl $stack, %esp // Por enquanto a pilha vai crescer abaixo do kerneil
+	movl $stack, %esp
+
+  movl $bss_start, %edi
+  movl $bss_end, %ecx
+  subl %edi, %ecx
+  movb $0, %al
+  rep stosb
 
 	call kmain
 
@@ -176,6 +188,6 @@ gdtr:
 
 .section .bss
 .align 16
-stack_bottom: .skip 16384
+stack_bottom: .skip KERNEL_STACK_SIZE
 stack:
 

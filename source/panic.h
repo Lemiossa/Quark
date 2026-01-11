@@ -7,6 +7,6 @@
 #include "idt.h"
 #include "stdint.h"
 
-void panic(char *str, struct regs regs);
+void panic(char *str, struct regs *r);
 
 #endif // PANIC_H

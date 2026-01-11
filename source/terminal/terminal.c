@@ -29,29 +29,45 @@ int terminal_height = 50;
 typedef struct char_entry char_entry_t;
 volatile char_entry_t buffer[TERMINAL_MAX_HEIGHT * TERMINAL_MAX_WIDTH] = {0};
 
-int cursor_x_position = 0;
-int cursor_y_position = 0;
+int cursor_x = 0;
+int cursor_y = 0;
 u8 current_color = 0x07;
 
-// Muda a posição do cursor visual do terminal
-void terminal_set_cursor_visual_position(int x, int y) {
-  if (x > terminal_width || y > terminal_height || vbe_supported)
+// desenha o cursor
+void terminal_draw_cursor(void) {
+  if (cursor_x > terminal_width || cursor_y > terminal_height)
     return;
-  int pos = y * terminal_width + x;
 
-  outb(0x3d4, 0xf);
-  outb(0x3d5, (u8)(pos & 0xff));
-  outb(0x3d4, 0xe);
-  outb(0x3d5, (u8)((pos >> 8) & 0xff));
+  if (!vbe_supported) {
+    int pos = cursor_y * terminal_width + cursor_x;
+
+    outb(0x3d4, 0xf);
+    outb(0x3d5, (u8)(pos & 0xff));
+    outb(0x3d4, 0xe);
+    outb(0x3d5, (u8)((pos >> 8) & 0xff));
+  } else {
+    for (int i = 0; i < CHAR_HEIGHT; i++) {
+      u8 line = i >= CHAR_HEIGHT - 2 ? 0xff : 0x00;
+      for (int j = 0; j < CHAR_WIDTH; j++) {
+        if (line & (0x80 >> j)) {
+          put_pixel((cursor_x * CHAR_WIDTH) + j, (cursor_y * CHAR_HEIGHT) + i,
+                    current_color & 0xf);
+        } else {
+          put_pixel((cursor_x * CHAR_WIDTH) + j, (cursor_y * CHAR_HEIGHT) + i,
+                    (current_color >> 4) & 0xf);
+        }
+      }
+    }
+  }
 }
 
 // Muda a posição do cursor do terminal
 void terminal_set_cursor_position(int x, int y) {
   if (x > terminal_width || y > terminal_height)
     return;
-  cursor_x_position = x;
-  cursor_y_position = y;
-  terminal_set_cursor_visual_position(x, y);
+  cursor_x = x;
+  cursor_y = y;
+  terminal_draw_cursor();
 }
 
 // Desenha todo o terminal caso seja grafico
@@ -68,6 +84,7 @@ void terminal_draw_framebuffer(void) {
     memcpy((void *)VGA_MEM, (void *)buffer,
            terminal_height * terminal_width * 2);
   }
+  terminal_draw_cursor();
 }
 
 // Seta a cor atual do VGA
@@ -87,29 +104,31 @@ void terminal_putchar_at(char c, int x, int y) {
 // Imprime um caractere na pos atual
 void terminal_putchar(char c) {
   if (c == '\r') {
-    cursor_x_position = 0;
-    terminal_set_cursor_visual_position(cursor_x_position, cursor_y_position);
+    terminal_putchar_at(' ', cursor_x, cursor_y);
+    cursor_x = 0;
+    terminal_draw_cursor();
     return;
   } else if (c == '\n') {
-    cursor_y_position++;
-    cursor_x_position = 0;
-    terminal_set_cursor_visual_position(cursor_x_position, cursor_y_position);
+    terminal_putchar_at(' ', cursor_x, cursor_y);
+    cursor_y++;
+    cursor_x = 0;
+    terminal_draw_cursor();
     return;
   }
 
-  terminal_putchar_at(c, cursor_x_position, cursor_y_position);
-  cursor_x_position++;
-  if (cursor_x_position >= terminal_width) {
-    cursor_x_position = 0;
-    cursor_y_position++;
+  terminal_putchar_at(c, cursor_x, cursor_y);
+  cursor_x++;
+  if (cursor_x >= terminal_width) {
+    cursor_x = 0;
+    cursor_y++;
   }
 
   // scroll
-  if (cursor_y_position >= terminal_height) {
+  if (cursor_y >= terminal_height) {
     memcpy((void *)buffer, (void *)(buffer + terminal_width),
            (terminal_height - 1) * terminal_width * 2);
-    cursor_y_position = terminal_height - 1;
-    cursor_x_position = 0;
+    cursor_y = terminal_height - 1;
+    cursor_x = 0;
     terminal_draw_framebuffer();
 
     for (int x = 0; x < terminal_width; x++) {
@@ -117,7 +136,7 @@ void terminal_putchar(char c) {
     }
   }
 
-  terminal_set_cursor_visual_position(cursor_x_position, cursor_y_position);
+  terminal_draw_cursor();
 }
 
 // Imprime uma string no terminal
@@ -135,10 +154,9 @@ void terminal_clear(void) {
     }
   }
 
-  cursor_x_position = 0;
-  cursor_y_position = 0;
-  terminal_set_cursor_visual_position(0, 0);
-  terminal_draw_framebuffer();
+  cursor_x = 0;
+  cursor_y = 0;
+  terminal_draw_cursor();
 }
 
 // Inicia o sistema de terminal
@@ -149,4 +167,7 @@ void terminal_init(void) {
     u32 font_address = (bios_font_segment << 4) + bios_font_offset;
     font = (u8 *)font_address;
   }
+
+  cursor_x = 0;
+  cursor_y = 0;
 }

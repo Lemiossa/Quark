@@ -5,9 +5,12 @@
 #ifndef KDEFS_H
 #define KDEFS_H
 
+#define KERNEL_STACK_SIZE 16384
+
 #define KERNEL_CODE_SELECTOR 0x08
 #define KERNEL_DATA_SELECTOR 0x10
 
+// https://wiki.osdev.org/VESA_Video_Modes
 // Modo VESA que o kernel vai colocar
 // MODE    RESOLUTION  BITS PER PIXEL  MAXIMUM COLORS
 // 0x0100  640x400     8               256

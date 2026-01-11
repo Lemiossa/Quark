@@ -4,26 +4,66 @@ MAKEFLAGS += --no-print-directory
 
 VERSION := 0.1
 IMAGE_SIZE := 16M
-IMAGE_FILE := $(CURDIR)/quarkos-i386-v$(VERSION).img
+IMAGE_FILE := $(CURDIR)/Quark.img
 
+SOURCE_DIR := $(CURDIR)/source
 BUILD_DIR := $(CURDIR)/build
-QUARKFS_DIR = $(BUILD_DIR)/bin/quarkfs
+BIN_DIR := $(BUILD_DIR)/bin
+OBJ_DIR := $(BUILD_DIR)/obj
+DEP_DIR := $(BUILD_DIR)/dep
 
-BOOTLOADER := $(BUILD_DIR)/bin/bootloader/bootloader.bin
+KERNEL := $(BIN_DIR)/kernel.bin
+BOOTLOADER := $(BIN_DIR)/bootload.bin
+CORE := $(BIN_DIR)/core.bin
 
-KERNEL := $(BUILD_DIR)/bin/kernel/kernel.bin
-KERNEL_SIZE := $(BUILD_DIR)/bin/kernel/kernel.bin.sectors
+BOOTLOADER_ELF := $(basename $(BOOTLOADER)).elf
 
-# Ferramentas
+KERNEL_ELF := $(basename $(KERNEL)).elf
+KERNEL_SECTORS := $(basename $(KERNEL)).sct
+
+SYSROOT := $(BUILD_DIR)/sysroot
+
 SFDISK := /sbin/sfdisk
 MKFS := /sbin/mkfs.fat
+MCOPY := mcopy
 
 CC := i686-elf-gcc
 LD := i686-elf-ld
 OBJCOPY := i686-elf-objcopy
-export CC
-export LD
-export OBJCOPY
+
+LINKER := $(SOURCE_DIR)/link.ld
+
+CFLAGS := -m32 -std=c99 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
+		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
+		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437
+LDFLAGS := -T$(LINKER) -nostdlib -static
+LIBS := -lgcc
+
+SOURCE := \
+		  entry.S \
+			int.S \
+		  idt.c \
+			pic.c \
+			kmain.c \
+		  string.c \
+		  terminal/terminal.c \
+		  terminal/char.c \
+		  graphics.c \
+		  panic.c \
+			printk.c
+
+SOURCE := $(addprefix $(SOURCE_DIR)/,$(SOURCE))
+
+SOURCE_C := $(filter %.c,$(SOURCE))
+SOURCE_S := $(filter %.S,$(SOURCE))
+
+OBJ := \
+	$(patsubst $(SOURCE_DIR)/%.S,$(OBJ_DIR)/%.S.o,$(SOURCE_S)) \
+	$(patsubst $(SOURCE_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(SOURCE_C))
+
+DEP := \
+	$(patsubst $(SOURCE_DIR)/%.S,$(DEP_DIR)/%.S.d,$(SOURCE_S)) \
+	$(patsubst $(SOURCE_DIR)/%.c,$(DEP_DIR)/%.c.d,$(SOURCE_C))
 
 all: $(IMAGE_FILE)
 
@@ -34,13 +74,9 @@ clean:
 
 	@rm -rf $(BUILD_DIR) $(IMAGE_FILE) *.p*
 
-kernel:
-	@echo "  MAKE      $(CURDIR)/kernel"
-	@$(MAKE) -C $(CURDIR)/kernel TARGET_DIR=$(BUILD_DIR) TARGET=$(notdir $(KERNEL))
-
-bootloader: kernel
-	@echo "  MAKE      $(CURDIR)/bootloader"
-	@$(MAKE) -C $(CURDIR)/bootloader TARGET_DIR=$(BUILD_DIR) TARGET=$(notdir $(BOOTLOADER)) TO_LOAD=$(shell cat $(KERNEL_SIZE))
+$(CORE): $(KERNEL) $(BOOTLOADER)
+	@echo "  CAT       $@"
+	@cat $(BOOTLOADER) $(KERNEL) > $@
 
 qemu: $(IMAGE_FILE)
 	@echo "  QEMU      $<"
@@ -51,18 +87,73 @@ dqemu: $(IMAGE_FILE)
 	@echo "target remote | qemu-system-i386 -hda $(IMAGE_FILE) -m 16M -gdb stdio -S -no-reboot" > .gdbinit
 	@echo "set architecture i386:intel" >> .gdbinit
 	@echo "set disassembly-flavor intel" >> .gdbinit
-	@echo "add-symbol-file $(KERNEL).elf 0x8000" >> .gdbinit
+	@echo "add-symbol-file $(KERNEL_ELF) 0x8000" >> .gdbinit
 	@gdb -x .gdbinit
 
-$(IMAGE_FILE): bootloader
+$(BOOTLOADER_ELF): $(OBJ_DIR)/boot/bootsect.o
+	@mkdir -p $(dir $@)
+	@echo "  LD        $@"
+	@$(LD) -melf_i386 -Ttext 0x7c00 -o $(BOOTLOADER_ELF) $^
+
+$(BOOTLOADER): $(BOOTLOADER_ELF)
+	@echo "  OBJCOPY   $@"
+	@$(OBJCOPY) -O binary $< $@
+
+$(OBJ_DIR)/boot/bootsect.o: $(SOURCE_DIR)/boot/bootsect.S $(KERNEL_SECTORS)
+	@mkdir -p $(dir $@) $(DEP_DIR)
+	@echo "  AS        $@"
+	@$(CC) -DSECTORS_TO_LOAD=$(shell cat $(KERNEL_SECTORS)) -MMD -MF $(DEP_DIR)/bootsector.d -c $(SOURCE_DIR)/boot/bootsect.S -o $@
+
+$(KERNEL_ELF): $(OBJ)
+	@mkdir -p $(dir $@)
+	@echo "  LD        $@"
+	@$(CC) $(LDFLAGS) -o $(KERNEL_ELF) $^ $(LIBS)
+
+$(KERNEL): $(KERNEL_ELF)
+	@echo "  OBJCOPY   $@"
+	@$(OBJCOPY) -O binary $< $@
+
+$(KERNEL_SECTORS): $(KERNEL)
+	@SIZE=$$(stat -c %s $<); \
+		SECTORS=$$(( ($$SIZE + 511) / 512 )); \
+		if [ ! -f $@ ] || [ "$$(cat $@)" -ne "$$SECTORS" ]; then \
+			echo $$SECTORS > $@; \
+		fi; \
+		truncate -s $$(( $$SECTORS * 512 )) $<
+
+$(OBJ_DIR)/%.c.o: $(SOURCE_DIR)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*)
+	@echo "  CC        $@"
+	@$(CC) $(CFLAGS) -c $< -o $@ -MMD -MF $(DEP_DIR)/$*.c.d
+
+$(OBJ_DIR)/%.S.o: $(SOURCE_DIR)/%.S
+	@mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*)
+	@echo "  AS        $@"
+	@$(CC) $(CFLAGS) -c $< -o $@ -MMD -MF $(DEP_DIR)/$*.S.d
+
+$(SYSROOT):
+	@echo "  SYSROOT   $@"
+	@mkdir -p $@
+	@mkdir -p $@/QUARK
+	@cp $(SOURCE_DIR) $@/QUARK -r
+	@cp Makefile $@/QUARK
+	@cp README.md $@/QUARK
+	@cp LICENSE $@/QUARK
+
+$(IMAGE_FILE): $(CORE) $(SYSROOT)
 	@echo "  PART      $@.p1"
 	@touch $@.p1
 	@truncate -s $(IMAGE_SIZE) $@.p1
 	@echo "  MKFS      FAT16 $@.p1"
 	@$(MKFS) -F 16 -n "QUARKOS" $@.p1 >/dev/null
+	@echo "  MCOPY     $(SYSROOT) -> $@.p1"
+	@$(MCOPY) -i $@.p1 -s $(SYSROOT)/* ::/
 	@echo "  CAT       $@"
-	@cat $(BOOTLOADER) $(KERNEL) $@.p1 > $@
+	@cat $(CORE) $@.p1 > $@
 	@echo "  SFDISK    $@"
-	@echo "label: dos\n$(shell expr $(shell cat $(KERNEL_SIZE)) + 1),$(IMAGE_SIZE),0e,*\n" | $(SFDISK) $@ >/dev/null 2>&1
+	@SECTORS_VAL=$$(cat $(KERNEL_SECTORS)); \
+	 START_SECTOR=$$(($$SECTORS_VAL + 1)); \
+	 echo "label: dos\n$$START_SECTOR,,0e,*" | $(SFDISK) $@ >/dev/null
 
-.PHONY: all clean kernel bootloader qemu dqemu
+.PHONY: all clean  qemu dqemu
+-include $(DEP) $(DEP_DIR)/bootsect.d
