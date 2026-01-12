@@ -3,6 +3,7 @@
  * Criado por Matheus Leme Da Silva
  */
 #include "idt.h"
+#include "kdefs.h"
 #include "panic.h"
 #include "pic.h"
 #include "stdint.h"
@@ -25,6 +26,9 @@ struct idt_gate {
 struct idt_gate idt[IDT_MAX_ENTRIES];
 struct idtr idtr;
 
+extern u32 isr_table[];
+extern u8 isr_count;
+
 void idt_set_gate(u8 gate, void *isr, u16 segment_selector, u8 attributes) {
   idt[gate].offset_low = (u32)isr & 0xffff;
   idt[gate].offset_high = ((u32)isr >> 16) & 0xffff;
@@ -33,10 +37,10 @@ void idt_set_gate(u8 gate, void *isr, u16 segment_selector, u8 attributes) {
   idt[gate].zero = 0;
 }
 
-#include "isr.h"
-
 void idt_init(void) {
-  isr_init();
+  for (u8 i = 0; i < isr_count; i++) {
+    idt_set_gate(i, (void *)isr_table[i], KERNEL_CODE_SELECTOR, 0x8e);
+  }
 
   idtr.size = sizeof(struct idt_gate) * IDT_MAX_ENTRIES - 1;
   idtr.offset = (u32)&idt[0];

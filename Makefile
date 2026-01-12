@@ -42,6 +42,7 @@ LIBS := -lgcc
 SOURCE := \
 		  entry.S \
 			int.S \
+			isr_table.S \
 		  idt.c \
 			pic.c \
 			kmain.c \
