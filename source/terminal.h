@@ -4,8 +4,9 @@
  */
 #ifndef TERMINAL_H
 #define TERMINAL_H
-#include "stdint.h"
+#include "kdefs.h"
 #include "stddef.h"
+#include "stdint.h"
 
 #define VGA_BLACK 0
 #define VGA_BLUE 1
@@ -25,6 +26,15 @@
 #define VGA_YELLOW 14
 #define VGA_WHITE 15
 
+#define CHAR_WIDTH 8
+#if KERNEL_FONT == 0x03
+#define CHAR_HEIGHT 8
+#elif KERNEL_FONT == 0x06
+#define CHAR_HEIGHT 16
+#else
+#error "Invalid font"
+#endif
+
 extern u16 bios_font_segment;
 extern u16 bios_font_offset;
 extern u8 *font;
@@ -39,6 +49,5 @@ void terminal_putchar(char c);
 void terminal_putstring(char *s);
 void terminal_clear(void);
 void terminal_set_cursor_position(int x, int y);
-
 
 #endif // TERMINAL_H

@@ -2,15 +2,15 @@
 # Criado por Matheus Leme Da Silva
 MAKEFLAGS += --no-print-directory
 
-VERSION := 0.1
-IMAGE_SIZE := 16M
-IMAGE_FILE := $(CURDIR)/Quark.img
-
 SOURCE_DIR := $(CURDIR)/source
 BUILD_DIR := $(CURDIR)/build
 BIN_DIR := $(BUILD_DIR)/bin
 OBJ_DIR := $(BUILD_DIR)/obj
 DEP_DIR := $(BUILD_DIR)/dep
+
+VERSION := 0.1
+IMAGE_SIZE := 16M
+IMAGE_FILE := $(BUILD_DIR)/Quark.img
 
 KERNEL := $(BIN_DIR)/kernel.bin
 BOOTLOADER := $(BIN_DIR)/bootload.bin
@@ -45,9 +45,9 @@ SOURCE := \
 		  idt.c \
 			pic.c \
 			kmain.c \
+			timer.c \
 		  string.c \
-		  terminal/terminal.c \
-		  terminal/char.c \
+		  terminal.c \
 		  graphics.c \
 		  panic.c \
 			printk.c
@@ -143,17 +143,17 @@ $(SYSROOT):
 $(IMAGE_FILE): $(CORE) $(SYSROOT)
 	@echo "  PART      $@.p1"
 	@touch $@.p1
-	@truncate -s $(IMAGE_SIZE) $@.p1
-	@echo "  MKFS      FAT16 $@.p1"
-	@$(MKFS) -F 16 -n "QUARKOS" $@.p1 >/dev/null
-	@echo "  MCOPY     $(SYSROOT) -> $@.p1"
-	@$(MCOPY) -i $@.p1 -s $(SYSROOT)/* ::/
+	@truncate -s $(IMAGE_SIZE) $(basename $@).p1
+	@echo "  MKFS      FAT16 $(basename $@).p1"
+	@$(MKFS) -F 16 -n "QUARKOS" $(basename $@).p1 >/dev/null
+	@echo "  MCOPY     $(SYSROOT) -> $(basename $@).p1"
+	@$(MCOPY) -i $(basename $@).p1 -s $(SYSROOT)/* ::/
 	@echo "  CAT       $@"
-	@cat $(CORE) $@.p1 > $@
+	@cat $(CORE) $(basename $@).p1 > $@
 	@echo "  SFDISK    $@"
 	@SECTORS_VAL=$$(cat $(KERNEL_SECTORS)); \
 	 START_SECTOR=$$(($$SECTORS_VAL + 1)); \
-	 echo "label: dos\n$$START_SECTOR,,0e,*" | $(SFDISK) $@ >/dev/null
+	 echo "label: dos\n$$START_SECTOR,,0e,*" | $(SFDISK) $@ >/dev/null 2>&1
 
 .PHONY: all clean  qemu dqemu
 -include $(DEP) $(DEP_DIR)/bootsect.d

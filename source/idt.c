@@ -82,6 +82,9 @@ void interrupt_handler(struct regs *r) {
   if (r->int_no < 32)
     panic(exception_messages[r->int_no], r);
 
-  if (r->int_no >= 32 && r->int_no <= 48)
+  if (r->int_no >= 32 && r->int_no <= 47) {
+    pic_execute_irq(r->int_no - 32, r);
     pic_send_eoi(r->int_no - 32);
+    return;
+  }
 }

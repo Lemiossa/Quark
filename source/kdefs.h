@@ -23,7 +23,13 @@
 // 0x03 = 8x8, 0x06 = 8x16
 #define KERNEL_FONT 0x03
 
-// Aonde a tabela de memoria do E820 vai ficar
+// Aonde a tabela de memoria do E820 vai ficar temporariamente
 #define E820_LOC 0x80000
+
+// Frequencia do PIT do kernel
+#define PIT_FREQ 100
+
+// Intervalo de blink do cursor
+#define CURSOR_BLINK_MS 500
 
 #endif // KDEFS_H

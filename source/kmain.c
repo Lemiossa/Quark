@@ -8,6 +8,7 @@
 #include "printk.h"
 #include "string.h"
 #include "terminal.h"
+#include "timer.h"
 
 struct e820_entry {
   u64 base;
@@ -31,8 +32,11 @@ void kmain(void) {
   terminal_set_color(VGA_WHITE, VGA_BLACK);
   terminal_clear();
 
+  timer_init();
+
   __asm__ volatile("sti");
 
-  for (;;)
+  for (;;) {
     __asm__ volatile("hlt");
+  }
 }

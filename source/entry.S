@@ -65,7 +65,6 @@ font:
 bios_font_segment: .word 0
 bios_font_offset: .word 0
 
-
 vbe:
 	movw $0x4f01, %ax
 	movw $KERNEL_VESA_MODE, %cx
@@ -169,7 +168,7 @@ gdt:
 	.word 0x0000
 	.byte 0x00
 	.byte 0b10011010
-	.byte 0b11001111
+	.byte 0b11000000 | 0xf
 	.byte 0x00
 
 	// DATA32
@@ -177,7 +176,7 @@ gdt:
 	.word 0x0000
 	.byte 0x00
 	.byte 0b10010010
-	.byte 0b11001111
+	.byte 0b11000000 | 0xf
 	.byte 0x00
 
 gdt_end:
