@@ -8,9 +8,10 @@ BIN_DIR := $(BUILD_DIR)/bin
 OBJ_DIR := $(BUILD_DIR)/obj
 DEP_DIR := $(BUILD_DIR)/dep
 
-VERSION := 0.1
+VERSION_MAJOR := 0
+VERSION_MINOR := 1
 IMAGE_SIZE := 16M
-IMAGE_FILE := $(BUILD_DIR)/quark.img
+IMAGE_FILE := $(BUILD_DIR)/quarkv$(VERSION_MAJOR)$(VERSION_MINOR).img
 
 KERNEL := $(BIN_DIR)/kernel.bin
 BOOTLOADER := $(BIN_DIR)/bootload.bin
@@ -36,7 +37,8 @@ LINKER := $(SOURCE_DIR)/link.ld
 
 CFLAGS := -m32 -std=c11 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
 		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
-		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437
+		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
+			-DVERSION=\"$(VERSION_MAJOR).$(VERSION_MINOR)\"
 LDFLAGS := -T$(LINKER) -nostdlib -static
 LIBS := -lgcc
 

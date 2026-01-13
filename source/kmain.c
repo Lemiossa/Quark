@@ -10,6 +10,10 @@
 #include "terminal.h"
 #include "timer.h"
 
+#ifndef VERSION
+#define VERSION "UNDEFINED"
+#endif
+
 struct e820_entry {
   u64 base;
   u64 length;
@@ -82,7 +86,7 @@ void kmain(void) {
 
   __asm__ volatile("sti");
 
-  printk("\n");
+  printk("Quark v%s kernel\n\n", VERSION);
 
   printk("Hello World\n");
 
