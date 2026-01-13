@@ -33,6 +33,7 @@ LD := i686-elf-ld
 OBJCOPY := i686-elf-objcopy
 GDB := i686-elf-gdb
 
+BOOTLOADER_LINKER = $(SOURCE_DIR)/boot/link.ld
 LINKER := $(SOURCE_DIR)/link.ld
 
 CFLAGS := -m32 -std=c11 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
@@ -73,10 +74,7 @@ all: $(IMAGE_FILE)
 
 clean:
 	@echo "  RM        $(BUILD_DIR)"
-	@echo "  RM        $(IMAGE_FILE)"
-	@echo "  RM        *.p*"
-
-	@rm -rf $(BUILD_DIR) $(IMAGE_FILE) *.p*
+	@rm -rf $(BUILD_DIR)
 
 $(CORE): $(KERNEL) $(BOOTLOADER)
 	@echo "  CAT       $@"
@@ -105,7 +103,7 @@ gdb: $(KERNEL_ELF)
 $(BOOTLOADER_ELF): $(OBJ_DIR)/boot/bootsect.o
 	@mkdir -p $(dir $@)
 	@echo "  LD        $@"
-	@$(LD) -melf_i386 -Ttext 0x7c00 -o $(BOOTLOADER_ELF) $^
+	@$(LD) -melf_i386 -T$(BOOTLOADER_LINKER) -o $(BOOTLOADER_ELF) $^
 
 $(BOOTLOADER): $(BOOTLOADER_ELF)
 	@echo "  OBJCOPY   $@"
@@ -154,7 +152,6 @@ $(SYSROOT):
 
 $(IMAGE_FILE): $(CORE) $(SYSROOT)
 	@echo "  PART      $@.p1"
-	@touch $@.p1
 	@truncate -s $(IMAGE_SIZE) $(basename $@).p1
 	@echo "  MKFS      FAT16 $(basename $@).p1"
 	@$(MKFS) -F 16 -n "QUARKOS" $(basename $@).p1 >/dev/null
