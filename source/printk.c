@@ -24,6 +24,12 @@ int printk(const char *format, ...) {
 
     format++;
 
+    int neg_pad = 0;
+    if (*format == '-') {
+      neg_pad = 1;
+      format++;
+    }
+
     int zero_pad = 0;
     if (*format == '0') {
       zero_pad = 1;
@@ -60,13 +66,41 @@ int printk(const char *format, ...) {
     case 's': {
       char *s = (char *)va_arg(args, char *);
       if (!s) {
+        if (!neg_pad) {
+          for (int i = 6; i < pad; i++) {
+            terminal_putchar(' ');
+          }
+        }
         terminal_putstring("(null)");
-        count += 6;
+        count += 6 + pad;
+        if (neg_pad) {
+          for (int i = 6; i < pad; i++) {
+            terminal_putchar(' ');
+          }
+        }
+
       } else {
+        int len = strlen(s);
+
+        if (!neg_pad) {
+          for (int i = len; i < pad; i++) {
+            terminal_putchar(' ');
+            len++;
+          }
+        }
+
         while (*s) {
           terminal_putchar(*s++);
-          count++;
         }
+
+        if (neg_pad) {
+          for (int i = len; i < pad; i++) {
+            terminal_putchar(' ');
+            len++;
+          }
+        }
+
+        count += len;
       }
     } break;
     case 'd': {
