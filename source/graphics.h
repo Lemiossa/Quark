@@ -7,6 +7,7 @@
 #include "kdefs.h"
 #include "stdint.h"
 
+#ifdef KERNEL_VESA_MODE
 #if KERNEL_VESA_MODE == 0x100
 #define VIDEO_MODE_WIDTH 640
 #define VIDEO_MODE_HEIGHT 400
@@ -18,7 +19,8 @@
 #define VIDEO_MODE_HEIGHT 600
 #else
 #error "Unsuported VESA mode"
-#endif
+#endif // if KERNEL_VESA_MODE == 0x100
+#endif // KERNEL_VESA_MODE
 
 extern u8 vbe_supported;
 

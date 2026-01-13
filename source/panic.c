@@ -18,8 +18,6 @@ void panic(char *str, struct regs *r) {
 
   printk("System halted! please, reboot\n");
 
-  terminal_draw_framebuffer();
-
   for (;;)
     __asm__ volatile("cli; hlt");
 }

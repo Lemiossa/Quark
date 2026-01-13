@@ -10,7 +10,7 @@ DEP_DIR := $(BUILD_DIR)/dep
 
 VERSION := 0.1
 IMAGE_SIZE := 16M
-IMAGE_FILE := $(BUILD_DIR)/Quark.img
+IMAGE_FILE := $(BUILD_DIR)/quark.img
 
 KERNEL := $(BIN_DIR)/kernel.bin
 BOOTLOADER := $(BIN_DIR)/bootload.bin
@@ -30,10 +30,11 @@ MCOPY := mcopy
 CC := i686-elf-gcc
 LD := i686-elf-ld
 OBJCOPY := i686-elf-objcopy
+GDB := i686-elf-gdb
 
 LINKER := $(SOURCE_DIR)/link.ld
 
-CFLAGS := -m32 -std=c99 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
+CFLAGS := -m32 -std=c11 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
 		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
 		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437
 LDFLAGS := -T$(LINKER) -nostdlib -static
@@ -84,11 +85,19 @@ qemu: $(IMAGE_FILE)
 	@qemu-system-i386 -hda $< -m 16M -enable-kvm
 
 dqemu: $(IMAGE_FILE)
+	@echo "  QEMU      $(IMAGE_FILE)"
+	@qemu-system-i386 \
+		-drive format=raw,file=$(IMAGE_FILE) \
+		-m 16M \
+		-s -S \
+		-no-reboot &
+
+gdb: $(KERNEL_ELF)
 	@echo "  GDB       .gdbinit"
-	@echo "target remote | qemu-system-i386 -hda $(IMAGE_FILE) -m 16M -gdb stdio -S -no-reboot" > .gdbinit
-	@echo "set architecture i386:intel" >> .gdbinit
+	@echo "set architecture i386:intel" > .gdbinit
 	@echo "set disassembly-flavor intel" >> .gdbinit
-	@echo "add-symbol-file $(KERNEL_ELF) 0x8000" >> .gdbinit
+	@echo "add-symbol-file $(KERNEL_ELF) 0x7e00" >> .gdbinit
+	@echo "target remote :1234" >> .gdbinit
 	@gdb -x .gdbinit
 
 $(BOOTLOADER_ELF): $(OBJ_DIR)/boot/bootsect.o
@@ -156,5 +165,5 @@ $(IMAGE_FILE): $(CORE) $(SYSROOT)
 	 START_SECTOR=$$(($$SECTORS_VAL + 1)); \
 	 echo "label: dos\n$$START_SECTOR,,0e,*" | $(SFDISK) $@ >/dev/null 2>&1
 
-.PHONY: all clean  qemu dqemu
+.PHONY: all clean gdb qemu dqemu
 -include $(DEP) $(DEP_DIR)/bootsect.d

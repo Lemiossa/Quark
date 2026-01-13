@@ -27,13 +27,14 @@ extern void terminal_tick();
 
 // IRQ 0
 void timer(struct regs *r) {
+  (void)r;
   terminal_tick();
   ticks++;
 }
 
 // Inicializa TIMER
 void timer_init(void) {
-  timer_set_freq(PIT_FREQ);
+  timer_set_freq(KERNEL_PIT_FREQ);
   pic_unmask_irq(0);
   pic_set_irq_handler(0, timer);
 }

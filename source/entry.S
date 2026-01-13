@@ -22,6 +22,9 @@ _start:
 	movw $0xffff, %sp
 
 	// Preparar algumas coisas antes do modo protegido
+	movw $0x1112, %ax
+	int $0x10
+
 	call font
 #ifdef KERNEL_VESA_MODE
 	call vbe
@@ -65,6 +68,7 @@ font:
 bios_font_segment: .word 0
 bios_font_offset: .word 0
 
+#ifdef KERNEL_VESA_MODE
 vbe:
 	movw $0x4f01, %ax
 	movw $KERNEL_VESA_MODE, %cx
@@ -75,28 +79,28 @@ vbe:
 	je vbe_ok
 vbe_unsupported:
 	movb $0, vbe_supported
-	movw $0x1112, %ax
-	int $0x10
 	jmp after_vbe
 vbe_ok:
 	movw $0x4f02, %ax
 	movw $KERNEL_VESA_MODE | 0x4000, %bx
 	int $0x10
+	movb $1, vbe_supported
 after_vbe:
 	ret
+#endif
 
 .global vbe_mode_info
 vbe_mode_info: .space 256
 .global vbe_supported
-vbe_supported: .byte 1
+vbe_supported: .byte 0
 
-#ifndef E820_LOC
-#error "Need E820_LOC"
+#ifndef KERNEL_E820_LOC
+#error "Need KERNEL_E820_LOC"
 #endif
 
 #define E820M 0x534d4150
-#define E820_SEG (E820_LOC >> 4)
-#define E820_OFF (E820_LOC & 0xf)
+#define E820_SEG (KERNEL_E820_LOC >> 4)
+#define E820_OFF (KERNEL_E820_LOC & 0xf)
 e820:
 	movw %es, %ax
 	pushw %ax

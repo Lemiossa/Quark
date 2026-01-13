@@ -40,8 +40,11 @@ int printk(const char *format, ...) {
 
     int l = 0;
     if (*format == 'l') {
-      l = 1;
       format++;
+      if (*format == 'l') {
+        l = 1;
+        format++;
+      }
     } else if (*format == 'h') {
       format++;
       if (*format == 'h')
