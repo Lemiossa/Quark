@@ -5,14 +5,14 @@
 #ifndef STDINT_H
 #define STDINT_H
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long long u64;
+typedef unsigned char U8;
+typedef unsigned short U16;
+typedef unsigned int U32;
+typedef unsigned long long U64;
 
-typedef signed char i8;
-typedef signed short i16;
-typedef signed int i32;
-typedef signed long long i64;
+typedef signed char I8;
+typedef signed short I16;
+typedef signed int I32;
+typedef signed long long I64;
 
 #endif // STDINT_H

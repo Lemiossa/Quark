@@ -2,7 +2,7 @@
  * int.S
  * Criado por Matheus Leme Da Silva
  */
-#include "kdefs.h"
+#include "../../../defs.h"
 .extern interrupt_handler
 
 .macro ISR_STUB_NO_ERR num

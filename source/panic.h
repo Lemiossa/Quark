@@ -4,8 +4,8 @@
  */
 #ifndef PANIC_H
 #define PANIC_H
-#include "idt.h"
-#include "stdint.h"
+#include <arch/x86/ints/idt.h>
+#include <stdint.h>
 
 void panic(char *str, struct regs *r);
 

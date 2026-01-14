@@ -4,13 +4,13 @@
  */
 #ifndef IDT_H
 #define IDT_H
-#include "stdint.h"
+#include <stdint.h>
 
 struct regs {
-  u32 ds;
-  u32 edi, esi, ebp, esp, ebx, edx, ecx, eax;
-  u32 int_no, err_code;
-  u32 eip, cs, eflags, usersp, ss;
+  U32 ds;
+  U32 edi, esi, ebp, esp, ebx, edx, ecx, eax;
+  U32 int_no, err_code;
+  U32 eip, cs, eflags, usersp, ss;
 } __attribute__((packed));
 
 void idt_init(void);

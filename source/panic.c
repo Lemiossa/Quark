@@ -2,9 +2,8 @@
  * panic.c
  * Criado por Matheus Leme Da Silva
  */
-#include "panic.h"
-#include "printk.h"
-#include "terminal.h"
+#include <panic.h>
+#include <printk.h>
 
 // Dá um panic no kernel
 void panic(char *str, struct regs *r) {

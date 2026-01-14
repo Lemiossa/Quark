@@ -1,0 +1,20 @@
+CompileFlags:
+  Add:
+    - -m32
+    - -ffreestanding
+    - -nostdinc
+    - -nostdlib
+
+    - -fno-stack-protector
+    - -fno-stack-check
+    - -fno-lto
+    - -fno-pic
+
+    - -mno-80387
+    - -mno-mmx
+    - -mno-sse
+    - -mno-sse2
+    - -mno-red-zone
+
+    - -I./
+    - -I./arch/x86/

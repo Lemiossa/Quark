@@ -2,10 +2,10 @@
  * printk.c
  * Criado por Matheus Leme Da Silva
  */
-#include "stdarg.h"
-#include "stdint.h"
-#include "string.h"
-#include "terminal.h"
+#include <stdarg.h>
+#include <stdint.h>
+#include <string.h>
+#include <terminal.h>
 
 // Imprime uma string formatada
 int printk(const char *format, ...) {
@@ -104,70 +104,70 @@ int printk(const char *format, ...) {
       }
     } break;
     case 'd': {
-      i64 num = 0;
+      I64 num = 0;
       if (l)
-        num = (i64)va_arg(args, i64);
+        num = (I64)va_arg(args, I64);
       else
-        num = (i64)va_arg(args, i32);
+        num = (I64)va_arg(args, I32);
       char buf[65];
       int is_neg = 0;
-      u64 unum = (u64)num;
+      U64 unum = (U64)num;
 
       if (num < 0) {
         is_neg = 1;
-        unum = (u64)(-(num + 1)) + 1;
+        unum = (U64)(-(num + 1)) + 1;
       } else {
-        unum = (u64)num;
+        unum = (U64)num;
       }
       count += int_to_ascii(unum, 10, is_neg, 0, pad, zero_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'u': {
-      u64 unum = 0;
+      U64 unum = 0;
       if (l)
-        unum = (u64)va_arg(args, u64);
+        unum = (U64)va_arg(args, U64);
       else
-        unum = (u64)va_arg(args, u32);
+        unum = (U64)va_arg(args, U32);
       char buf[65];
       count += int_to_ascii(unum, 10, 0, 0, pad, zero_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'x': {
-      u64 unum = 0;
+      U64 unum = 0;
       if (l)
-        unum = (u64)va_arg(args, u64);
+        unum = (U64)va_arg(args, U64);
       else
-        unum = (u64)va_arg(args, u32);
+        unum = (U64)va_arg(args, U32);
       char buf[65];
       count += int_to_ascii(unum, 16, 0, 0, pad, zero_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'X': {
-      u64 unum = 0;
+      U64 unum = 0;
       if (l)
-        unum = (u64)va_arg(args, u64);
+        unum = (U64)va_arg(args, U64);
       else
-        unum = (u64)va_arg(args, u32);
+        unum = (U64)va_arg(args, U32);
       char buf[65];
       count += int_to_ascii(unum, 16, 0, 1, pad, zero_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'b': {
-      u64 unum = 0;
+      U64 unum = 0;
       if (l)
-        unum = (u64)va_arg(args, u64);
+        unum = (U64)va_arg(args, U64);
       else
-        unum = (u64)va_arg(args, u32);
+        unum = (U64)va_arg(args, U32);
       char buf[65];
       count += int_to_ascii(unum, 2, 0, 0, pad, zero_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'o': {
-      u64 unum = 0;
+      U64 unum = 0;
       if (l)
-        unum = (u64)va_arg(args, u64);
+        unum = (U64)va_arg(args, U64);
       else
-        unum = (u64)va_arg(args, u32);
+        unum = (U64)va_arg(args, U32);
       char buf[65];
       count += int_to_ascii(unum, 8, 0, 0, pad, zero_pad, buf);
       terminal_putstring(buf);

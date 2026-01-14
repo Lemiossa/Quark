@@ -4,9 +4,9 @@
  */
 #ifndef TERMINAL_H
 #define TERMINAL_H
-#include "kdefs.h"
-#include "stddef.h"
-#include "stdint.h"
+#include <defs.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #define VGA_BLACK 0
 #define VGA_BLUE 1
@@ -35,15 +35,15 @@
 #error "Invalid font"
 #endif
 
-extern u16 bios_font_segment;
-extern u16 bios_font_offset;
-extern u8 *font;
+extern U16 bios_font_segment;
+extern U16 bios_font_offset;
+extern U8 *font;
 extern int terminal_width;
 extern int terminal_height;
 
 void terminal_draw_framebuffer(void);
 void terminal_init(void);
-void terminal_set_color(u8 fg, u8 bg);
+void terminal_set_color(U8 fg, U8 bg);
 void terminal_putchar_at(char c, int x, int y);
 void terminal_putchar(char c);
 void terminal_putstring(char *s);

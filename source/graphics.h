@@ -4,8 +4,8 @@
  */
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
-#include "kdefs.h"
-#include "stdint.h"
+#include <defs.h>
+#include <stdint.h>
 
 #ifdef KERNEL_VESA_MODE
 #if KERNEL_VESA_MODE == 0x100
@@ -22,8 +22,8 @@
 #endif // if KERNEL_VESA_MODE == 0x100
 #endif // KERNEL_VESA_MODE
 
-extern u8 vbe_supported;
+extern U8 vbe_supported;
 
-void put_pixel(int x, int y, u8 color);
+void put_pixel(int x, int y, U8 color);
 
 #endif // GRAPHICS_H

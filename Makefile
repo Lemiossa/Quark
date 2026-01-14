@@ -8,10 +8,11 @@ BIN_DIR := $(BUILD_DIR)/bin
 OBJ_DIR := $(BUILD_DIR)/obj
 DEP_DIR := $(BUILD_DIR)/dep
 
+ARCH ?= x86
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
 IMAGE_SIZE := 16M
-IMAGE_FILE := $(BUILD_DIR)/quarkv$(VERSION_MAJOR)$(VERSION_MINOR).img
+IMAGE_FILE := $(BUILD_DIR)/quark$(ARCH).img
 
 KERNEL := $(BIN_DIR)/kernel.bin
 BOOTLOADER := $(BIN_DIR)/bootload.bin
@@ -33,28 +34,31 @@ LD := i686-elf-ld
 OBJCOPY := i686-elf-objcopy
 GDB := i686-elf-gdb
 
-BOOTLOADER_LINKER = $(SOURCE_DIR)/boot/link.ld
-LINKER := $(SOURCE_DIR)/link.ld
+BOOTLOADER_LINKER = $(SOURCE_DIR)/arch/$(ARCH)/boot/link.ld
+LINKER := $(SOURCE_DIR)/arch/$(ARCH)/link.ld
 
+INCLUDES := . arch/$(ARCH)
+
+INCLUDES := $(addprefix -I$(SOURCE_DIR)/,$(INCLUDES))
 CFLAGS := -m32 -std=c11 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
-		  -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
-		  -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
-			-DVERSION=\"$(VERSION_MAJOR).$(VERSION_MINOR)\"
+					-fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
+					-mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
+					-DVERSION=\"$(VERSION_MAJOR).$(VERSION_MINOR)\" $(INCLUDES)
 LDFLAGS := -T$(LINKER) -nostdlib -static
 LIBS := -lgcc
 
 SOURCE := \
-		  entry.S \
-			int.S \
-			isr_table.S \
-		  idt.c \
-			pic.c \
+			arch/$(ARCH)/cpu/entry.S \
+			arch/$(ARCH)/ints/int.S \
+			arch/$(ARCH)/ints/isr_table.S \
+			arch/$(ARCH)/ints/idt.c \
+			arch/$(ARCH)/ints/pic.c \
+			arch/$(ARCH)/timer.c \
 			kmain.c \
-			timer.c \
-		  string.c \
-		  terminal.c \
-		  graphics.c \
-		  panic.c \
+			string.c \
+			terminal.c \
+			graphics.c \
+			panic.c \
 			printk.c
 
 SOURCE := $(addprefix $(SOURCE_DIR)/,$(SOURCE))
@@ -100,7 +104,7 @@ gdb: $(KERNEL_ELF)
 	@echo "target remote :1234" >> .gdbinit
 	@gdb -x .gdbinit
 
-$(BOOTLOADER_ELF): $(OBJ_DIR)/boot/bootsect.o
+$(BOOTLOADER_ELF): $(OBJ_DIR)/arch/$(ARCH)/boot/bootsect.o
 	@mkdir -p $(dir $@)
 	@echo "  LD        $@"
 	@$(LD) -melf_i386 -T$(BOOTLOADER_LINKER) -o $(BOOTLOADER_ELF) $^
@@ -109,10 +113,10 @@ $(BOOTLOADER): $(BOOTLOADER_ELF)
 	@echo "  OBJCOPY   $@"
 	@$(OBJCOPY) -O binary $< $@
 
-$(OBJ_DIR)/boot/bootsect.o: $(SOURCE_DIR)/boot/bootsect.S $(KERNEL_SECTORS)
-	@mkdir -p $(dir $@) $(DEP_DIR)
+$(OBJ_DIR)/arch/$(ARCH)/boot/bootsect.o: $(SOURCE_DIR)/arch/$(ARCH)/boot/bootsect.S $(KERNEL_SECTORS)
+	@mkdir -p $(dir $@) $(DEP_DIR)/arch/$(ARCH)/boot/
 	@echo "  AS        $@"
-	@$(CC) -DSECTORS_TO_LOAD=$(shell cat $(KERNEL_SECTORS)) -MMD -MF $(DEP_DIR)/bootsector.d -c $(SOURCE_DIR)/boot/bootsect.S -o $@
+	@$(CC) -DSECTORS_TO_LOAD=$(shell cat $(KERNEL_SECTORS)) -MMD -MF $(DEP_DIR)/arch/$(ARCH)/boot/bootsector.d -c $(SOURCE_DIR)/arch/$(ARCH)/boot/bootsect.S -o $@
 
 $(KERNEL_ELF): $(OBJ)
 	@mkdir -p $(dir $@)
@@ -165,4 +169,4 @@ $(IMAGE_FILE): $(CORE) $(SYSROOT)
 	 echo "label: dos\n$$START_SECTOR,,0e,*" | $(SFDISK) $@ >/dev/null 2>&1
 
 .PHONY: all clean gdb qemu dqemu
--include $(DEP) $(DEP_DIR)/bootsect.d
+-include $(DEP) $(DEP_DIR)/arch/$(ARCH)/boot/bootsector.d

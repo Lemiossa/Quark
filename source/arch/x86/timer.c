@@ -2,25 +2,28 @@
  * timer.c
  * Criado por Matheus Leme Da Silva
  */
-#include "kdefs.h"
-#include "pic.h"
-#include "ports.h"
-#include "stdint.h"
+#include <../../defs.h>
+#include <../../stdint.h>
+#include <ints/pic.h>
+#include <io.h>
+
+#define MAKE_PIT_COMMAND(channel, access, op, bcd)                             \
+  (((channel) << 6) | ((access) << 4) | ((op) << 1) | ((bcd) & 1))
 
 #define PIT_BASE_FREQUENCY 1193182
 
-void timer_set_freq(u16 freq) {
-  u32 divisor = PIT_BASE_FREQUENCY / freq;
+void timer_set_freq(U16 freq) {
+  U32 divisor = PIT_BASE_FREQUENCY / freq;
   if (divisor == 0)
     divisor = 1;
   if (divisor > 65535)
     divisor = 65535;
-  outb(0x43, 0b00110100);
+  outb(0x43, MAKE_PIT_COMMAND(0, 3, 2, 0));
   outb(0x40, divisor & 0xff);
-  outb(0x40, (divisor >> 8) & 0xff);
+  outb(0x40, divisor >> 8);
 }
 
-u32 volatile ticks = 0;
+U32 volatile ticks = 0;
 
 // Handlers
 extern void terminal_tick();

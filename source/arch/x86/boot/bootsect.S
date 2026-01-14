@@ -34,13 +34,13 @@ _start:
 	movw $START_LBA, %si
 
 load_loop:
-	cmp $SECTORS_TO_LOAD, %si
+	cmpw $SECTORS_TO_LOAD, %si
 	jg jump
 
 	movb boot_drive, %dl
 	movw %si, %ax
 	call read_sector
-	cmp $0, %ah
+	cmpb $0, %ah
 	jne error
 
 	addl $512, %ebx
@@ -55,7 +55,7 @@ load_loop:
 	jmp load_loop
 
 jump:
-	jmp $(LOAD_ADDR >> 4), $(LOAD_ADDR & 0xf)
+	ljmp $(LOAD_ADDR >> 4), $(LOAD_ADDR & 0xf)
 	jmp hang
 
 error:
@@ -102,7 +102,7 @@ print_string:
 
 print_char:
 	lodsb
-	cmp $0, %al
+	cmpb $0, %al
 	je print_string_end
 	movb $0x0e, %ah
 	int $0x10
@@ -113,21 +113,22 @@ print_string_end:
 	popw %si
 	ret
 
-boot_drive: 	.byte 0
-message: 		.ascii "Loading\0"
-error_message: 	.ascii "Failed to load\n\r\0"
+boot_drive:      .byte 0
+message:         .ascii "Loading\0"
+error_message:   .ascii "Failed to load\n\r\0"
 
 .align 4
 disk_packet:
-	disk_packet_size: 			.byte 0x10
-	disk_packet_reserved: 		.byte 0x00
-	disk_packet_count: 			.word 0x0001
-	disk_packet_offset: 		.word 0x0000
-	disk_packet_segment: 		.word 0x0000
-	disk_packet_lba: 			.quad 0
+	disk_packet_size:       .byte 0x10
+	disk_packet_reserved:   .byte 0x00
+	disk_packet_count:      .word 0x0001
+	disk_packet_offset:     .word 0x0000
+	disk_packet_segment:    .word 0x0000
+	disk_packet_lba:        .quad 0
 
 .org 446
 /* Só pro compilador dar erro caso o codigo entre na tabela de partições */
 /* Vai ser preenchida com sfdisk depois */
 .org 510
 .word 0xaa55
+

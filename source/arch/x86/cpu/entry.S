@@ -6,7 +6,7 @@
 .section .text.entry
 .extern kmain
 
-#include "kdefs.h"
+#include "defs.h"
 
 #ifndef KERNEL_STACK_SIZE
 #error "Need KERNEL_STACL_SIZE"

@@ -2,12 +2,12 @@
  * pic.c
  * Criado por Matheus Leme Da Silva
  */
-#include "pic.h"
-#include "ports.h"
-#include "stddef.h"
+#include <ints/pic.h>
+#include <io.h>
+#include <stddef.h>
 
 // Envia EOI pro PIC
-void pic_send_eoi(u8 irq) {
+void pic_send_eoi(U8 irq) {
   if (irq >= 8)
     outb(PIC2_COMMAND, PIC_EOI);
   outb(PIC1_COMMAND, PIC_EOI);
@@ -44,28 +44,28 @@ void pic_remap(void) {
 }
 
 // Mascara uma IRQ
-void pic_mask_irq(u8 irq) {
-  u16 port = PIC1_DATA;
+void pic_mask_irq(U8 irq) {
+  U16 port = PIC1_DATA;
 
   if (irq >= 8) {
     port = PIC2_DATA;
     irq -= 8;
   }
 
-  u8 data = (inb(port) | (1 << irq));
+  U8 data = (inb(port) | (1 << irq));
   outb(port, data);
 }
 
 // Desmascara uma IRQ
-void pic_unmask_irq(u8 irq) {
-  u16 port = PIC1_DATA;
+void pic_unmask_irq(U8 irq) {
+  U16 port = PIC1_DATA;
 
   if (irq >= 8) {
     port = PIC2_DATA;
     irq -= 8;
   }
 
-  u8 data = (inb(port) & ~(1 << irq));
+  U8 data = (inb(port) & ~(1 << irq));
   outb(port, data);
 }
 
@@ -73,7 +73,7 @@ irq_handler_t irqs[16] = {NULL};
 
 // Muda o handler de uma IRQ
 // NOTE: não aceita mudar o handler da IRQ 2
-void pic_set_irq_handler(u8 irq, irq_handler_t handler) {
+void pic_set_irq_handler(U8 irq, irq_handler_t handler) {
   if (irq == 2 || !handler)
     return;
 
@@ -81,7 +81,7 @@ void pic_set_irq_handler(u8 irq, irq_handler_t handler) {
 }
 
 // Executa uma IRQ
-void pic_execute_irq(u8 irq, struct regs *r) {
+void pic_execute_irq(U8 irq, struct regs *r) {
   if (irq >= 16)
     return;
   irqs[irq](r);

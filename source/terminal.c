@@ -2,22 +2,22 @@
  * terminal.c
  * Criado por Matheus Leme Da Silva
  */
-#include "terminal.h"
-#include "graphics.h"
-#include "kdefs.h"
-#include "ports.h"
-#include "stdint.h"
-#include "string.h"
-#include "timer.h"
+#include <defs.h>
+#include <graphics.h>
+#include <io.h>
+#include <stdint.h>
+#include <string.h>
+#include <terminal.h>
+#include <timer.h>
 
 struct char_entry {
-  u8 ch;
-  u8 cl;
+  U8 ch;
+  U8 cl;
 } __attribute__((packed));
 
-extern u16 bios_font_segment;
-extern u16 bios_font_offset;
-u8 *font = NULL;
+extern U16 bios_font_segment;
+extern U16 bios_font_offset;
+U8 *font = NULL;
 
 int terminal_width = 80;
 int terminal_height = 50;
@@ -33,18 +33,18 @@ volatile struct char_entry buffer[TERMINAL_MAX_HEIGHT * TERMINAL_MAX_WIDTH] = {
 int cursor_x = 0;
 int cursor_y = 0;
 int cursor = 1;
-u8 current_color = 0x07;
+U8 current_color = 0x07;
 
 // Desenha um caractere no modo grafico
-void terminal_draw_char(int x, int y, char c, u8 fg, u8 bg) {
+void terminal_draw_char(int x, int y, char c, U8 fg, U8 bg) {
 #ifdef KERNEL_VESA_MODE
   if (!font)
     return;
   if (vbe_supported) {
-    u8 uc = (u8)c;
-    u8 *glyph = font + (uc * CHAR_HEIGHT);
+    U8 uc = (U8)c;
+    U8 *glyph = font + (uc * CHAR_HEIGHT);
     for (int i = 0; i < CHAR_HEIGHT; i++) {
-      u8 line = glyph[i];
+      U8 line = glyph[i];
       for (int j = 0; j < CHAR_WIDTH; j++) {
         if (line & (0x80 >> j)) {
           put_pixel((x * CHAR_WIDTH) + j, (y * CHAR_HEIGHT) + i, fg);
@@ -70,25 +70,19 @@ void terminal_draw_cursor(void) {
     int pos = cursor_y * terminal_width + cursor_x;
 
     outb(0x3d4, 0xf);
-    outb(0x3d5, (u8)(pos & 0xff));
+    outb(0x3d5, (U8)(pos & 0xff));
     outb(0x3d4, 0xe);
-    outb(0x3d5, (u8)(pos >> 8));
+    outb(0x3d5, (U8)(pos >> 8));
     return;
   }
 
   struct char_entry c = buffer[cursor_y * terminal_width + cursor_x];
-  terminal_draw_char(cursor_x, cursor_y, c.ch, current_color & 0xf,
-                     current_color >> 4);
-
-  for (int i = 0; i < CHAR_HEIGHT; i++) {
-    u8 line = i >= CHAR_HEIGHT - 2 ? 0xff : 0x00;
-    for (int j = 0; j < CHAR_WIDTH; j++) {
-      if (line & (0x80 >> j)) {
-        put_pixel((cursor_x * CHAR_WIDTH) + j, (cursor_y * CHAR_HEIGHT) + i,
-                  cursor ? current_color & 0xf : current_color >> 4);
-      }
-    }
-  }
+  if (cursor)
+    terminal_draw_char(cursor_x, cursor_y, c.ch, current_color >> 4,
+                       current_color & 0xf);
+  else
+    terminal_draw_char(cursor_x, cursor_y, c.ch, current_color & 0xf,
+                       current_color >> 4);
 }
 
 // Desenha todo o terminal
@@ -116,7 +110,7 @@ void terminal_set_cursor_position(int x, int y) {
 }
 
 // Seta a cor atual do VGA
-void terminal_set_color(u8 fg, u8 bg) { current_color = ((bg << 4) | fg); }
+void terminal_set_color(U8 fg, U8 bg) { current_color = ((bg << 4) | fg); }
 
 // Coloca um caractere com a cor atual em uma posição específica da tela
 void terminal_putchar_at(char c, int x, int y) {
@@ -131,24 +125,57 @@ void terminal_putchar_at(char c, int x, int y) {
 
 // Imprime um caractere na pos atual
 void terminal_putchar(char c) {
-  if (c == '\r') {
-    terminal_putchar_at(' ', cursor_x, cursor_y);
+  switch (c) {
+  case '\r': {
+    terminal_putchar_at(buffer[cursor_y * terminal_width + cursor_x].ch,
+                        cursor_x, cursor_y);
     cursor_x = 0;
+    cursor = 1;
     terminal_draw_cursor();
-    return;
-  } else if (c == '\n') {
-    terminal_putchar_at(' ', cursor_x, cursor_y);
-    cursor_y++;
-    cursor_x = 0;
-    terminal_draw_cursor();
-    return;
-  }
+  } break;
+  case '\n': {
+    terminal_putchar_at(buffer[cursor_y * terminal_width + cursor_x].ch,
+                        cursor_x, cursor_y);
 
-  terminal_putchar_at(c, cursor_x, cursor_y);
-  cursor_x++;
-  if (cursor_x >= terminal_width) {
-    cursor_x = 0;
     cursor_y++;
+    cursor_x = 0;
+    cursor = 1;
+    terminal_draw_cursor();
+  } break;
+  case '\b': {
+    terminal_putchar_at(buffer[cursor_y * terminal_width + cursor_x].ch,
+                        cursor_x, cursor_y);
+
+    if (cursor_x == 0)
+      return;
+
+    cursor_x--;
+
+    terminal_putchar_at(' ', cursor_x, cursor_y);
+    cursor = 1;
+    terminal_draw_cursor();
+
+  } break;
+  case '\t': {
+    for (int i = 0; i < 4; i++) {
+      terminal_putchar(' ');
+    }
+  } break;
+  case '\x1b': {
+    terminal_putchar('^');
+    terminal_putchar('[');
+  } break;
+  default: {
+    terminal_putchar_at(c, cursor_x, cursor_y);
+    cursor_x++;
+    if (cursor_x >= terminal_width) {
+      cursor_x = 0;
+      cursor_y++;
+    }
+    cursor = 1;
+    terminal_draw_cursor();
+
+  } break;
   }
 
   // scroll
@@ -190,8 +217,8 @@ void terminal_init(void) {
   if (vbe_supported) {
     terminal_width = VIDEO_MODE_WIDTH / CHAR_WIDTH;
     terminal_height = VIDEO_MODE_HEIGHT / CHAR_HEIGHT;
-    u32 font_address = (bios_font_segment << 4) + bios_font_offset;
-    font = (u8 *)font_address;
+    U32 font_address = (bios_font_segment << 4) + bios_font_offset;
+    font = (U8 *)font_address;
   }
 #endif
 
@@ -205,7 +232,7 @@ void terminal_init(void) {
 #error "Need KERNEL_CURSOR_BLINK_MS"
 #endif
 
-u16 volatile terminal_ticks = 0;
+U16 volatile terminal_ticks = 0;
 
 // Tick do terminal
 void terminal_tick(void) {

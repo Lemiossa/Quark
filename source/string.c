@@ -2,20 +2,30 @@
  * string.c
  * Criado por Matheus Leme Da Silva
  */
-#include "string.h"
-#include "stddef.h"
-#include "stdint.h"
+#include <string.h>
+#include <stddef.h>
+#include <stdint.h>
+
+// Pega o tamanho de uma string até \0
+int strlen(char *s) {
+  if (!s)
+    return 0;
+  int len = 0;
+  while (*s++)
+    len++;
+  return len;
+}
 
 // Copia n bytes de s para d
-void *memcpy(void *d, const void *s, u32 n) {
+void *memcpy(void *d, const void *s, U32 n) {
   if (!d || !s)
     return NULL;
   if (n == 0)
     return d;
-  u8 *dest = (u8 *)d;
-  const u8 *src = (const u8 *)s;
+  U8 *dest = (U8 *)d;
+  const U8 *src = (const U8 *)s;
 
-  for (u32 i = 0; i < n; i++) {
+  for (U32 i = 0; i < n; i++) {
     dest[i] = src[i];
   }
 
@@ -24,7 +34,7 @@ void *memcpy(void *d, const void *s, u32 n) {
 
 // Converte N para ASCII em D usando BASE e retorna o numero de caracteres
 // // escritos
-int int_to_ascii(u64 n, int base, int is_neg, int is_upper, int pad,
+int int_to_ascii(U64 n, int base, int is_neg, int is_upper, int pad,
                  int zero_pad, char *d) {
   if (!d || base < 2 || base > 36)
     return 0;
@@ -60,7 +70,7 @@ int int_to_ascii(u64 n, int base, int is_neg, int is_upper, int pad,
   if (is_neg)
     d[di++] = '-';
 
-  for (int i = 0; i < pad - len; i++) {
+  for (int i = len; i < pad; i++) {
     d[di++] = zero_pad ? '0' : ' ';
   }
 

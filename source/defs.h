@@ -1,9 +1,9 @@
 /**
- * kdefs.h
+ * defs.h
  * Criado por Matheus Leme Da Silva
  */
-#ifndef KDEFS_H
-#define KDEFS_H
+#ifndef DEFS_H
+#define DEFS_H
 
 #define KERNEL_STACK_SIZE 16384
 
@@ -20,7 +20,7 @@
 // 0x0101  640x480     8               256
 // 0x0103  800x600     8               256
 // Só modos de 256 cores suportados
-#define KERNEL_VESA_MODE 0x103
+#define KERNEL_VESA_MODE 0x101
 
 // Fonte que vai pegar da BIOS
 // 0x03 = 8x8, 0x06 = 8x16
@@ -35,4 +35,4 @@
 // Intervalo de blink do cursor
 #define KERNEL_CURSOR_BLINK_MS 500
 
-#endif // KDEFS_H
+#endif // DEFS_H
