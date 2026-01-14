@@ -35,6 +35,12 @@ int cursor_y = 0;
 int cursor = 1;
 U8 current_color = 0x07;
 
+enum {
+  ESCAPE,
+  CSI,
+  NORMAL,
+} terminal_mode;
+
 // Desenha um caractere no modo grafico
 void terminal_draw_char(int x, int y, char c, U8 fg, U8 bg) {
 #ifdef KERNEL_VESA_MODE
@@ -162,10 +168,34 @@ void terminal_putchar(char c) {
     }
   } break;
   case '\x1b': {
-    terminal_putchar('^');
-    terminal_putchar('[');
+    terminal_mode = ESCAPE;
+    return;
   } break;
   default: {
+    if (terminal_mode == ESCAPE) {
+      if (c == '[') {
+        terminal_mode = CSI;
+        return;
+      }
+    } else if (terminal_mode == CSI) {
+      if (c == 'D') {
+        if (cursor_x > 0)
+          cursor_x--;
+      } else if (c == 'C') {
+        if (cursor_x >= terminal_width) {
+          cursor_x = 0;
+          cursor_y++;
+        } else
+          cursor_x++;
+      } else if (c == 'A') {
+        if (cursor_y > 0)
+          cursor_y--;
+      } else if (c == 'B') {
+        cursor_y++;
+      }
+      goto after_print;
+    }
+    terminal_mode = NORMAL;
     terminal_putchar_at(c, cursor_x, cursor_y);
     cursor_x++;
     if (cursor_x >= terminal_width) {
@@ -177,6 +207,7 @@ void terminal_putchar(char c) {
 
   } break;
   }
+after_print:
 
   // scroll
   if (cursor_y >= terminal_height) {
