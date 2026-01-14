@@ -137,7 +137,6 @@ void terminal_putchar(char c) {
                         cursor_x, cursor_y);
     cursor_x = 0;
     cursor = 1;
-    terminal_draw_cursor();
   } break;
   case '\n': {
     terminal_putchar_at(buffer[cursor_y * terminal_width + cursor_x].ch,
@@ -146,7 +145,6 @@ void terminal_putchar(char c) {
     cursor_y++;
     cursor_x = 0;
     cursor = 1;
-    terminal_draw_cursor();
   } break;
   case '\b': {
     terminal_putchar_at(buffer[cursor_y * terminal_width + cursor_x].ch,
@@ -159,8 +157,6 @@ void terminal_putchar(char c) {
 
     terminal_putchar_at(' ', cursor_x, cursor_y);
     cursor = 1;
-    terminal_draw_cursor();
-
   } break;
   case '\t': {
     for (int i = 0; i < 4; i++) {
@@ -178,6 +174,8 @@ void terminal_putchar(char c) {
         return;
       }
     } else if (terminal_mode == CSI) {
+      cursor = 0;
+      terminal_draw_cursor();
       if (c == 'D') {
         if (cursor_x > 0)
           cursor_x--;
@@ -193,6 +191,7 @@ void terminal_putchar(char c) {
       } else if (c == 'B') {
         cursor_y++;
       }
+      terminal_mode = NORMAL;
       goto after_print;
     }
     terminal_mode = NORMAL;
@@ -202,9 +201,6 @@ void terminal_putchar(char c) {
       cursor_x = 0;
       cursor_y++;
     }
-    cursor = 1;
-    terminal_draw_cursor();
-
   } break;
   }
 after_print:
@@ -221,6 +217,9 @@ after_print:
       terminal_putchar_at(' ', x, terminal_height - 1);
     }
   }
+
+  cursor = 1;
+  terminal_draw_cursor();
 }
 
 // Imprime uma string no terminal
