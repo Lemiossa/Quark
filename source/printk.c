@@ -119,7 +119,7 @@ int printk(const char *format, ...) {
       } else {
         unum = (U64)num;
       }
-      count += int_to_ascii(unum, 10, is_neg, 0, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 10, is_neg, 0, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'u': {
@@ -129,7 +129,7 @@ int printk(const char *format, ...) {
       else
         unum = (U64)va_arg(args, U32);
       char buf[65];
-      count += int_to_ascii(unum, 10, 0, 0, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 10, 0, 0, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'x': {
@@ -139,7 +139,7 @@ int printk(const char *format, ...) {
       else
         unum = (U64)va_arg(args, U32);
       char buf[65];
-      count += int_to_ascii(unum, 16, 0, 0, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 16, 0, 0, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'X': {
@@ -149,7 +149,7 @@ int printk(const char *format, ...) {
       else
         unum = (U64)va_arg(args, U32);
       char buf[65];
-      count += int_to_ascii(unum, 16, 0, 1, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 16, 0, 1, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'b': {
@@ -159,7 +159,7 @@ int printk(const char *format, ...) {
       else
         unum = (U64)va_arg(args, U32);
       char buf[65];
-      count += int_to_ascii(unum, 2, 0, 0, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 2, 0, 0, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
     } break;
     case 'o': {
@@ -169,8 +169,13 @@ int printk(const char *format, ...) {
       else
         unum = (U64)va_arg(args, U32);
       char buf[65];
-      count += int_to_ascii(unum, 8, 0, 0, pad, zero_pad, buf);
+      count += int_to_ascii(unum, 8, 0, 0, pad, zero_pad, neg_pad, buf);
       terminal_putstring(buf);
+    } break;
+    case '%': {
+      count++;
+      terminal_putchar('%');
+      format++;
     } break;
     default: {
       terminal_putchar(*format++);

@@ -2,7 +2,7 @@
  * int.S
  * Criado por Matheus Leme Da Silva
  */
-#include "../../../defs.h"
+#include <defs.h>
 .extern interrupt_handler
 
 .macro ISR_STUB_NO_ERR num
@@ -23,11 +23,13 @@ isr_\num:
 isr_common:
 	pusha
 
-	xorl %eax, %eax
-	movw %ds, %ax
-	pushl %eax
+	pushl %ds
+	pushl %es
+	pushl %fs
+	pushl %gs
 
 	movw $KERNEL_DATA_SELECTOR, %ax
+	movw %ax, %ss
 	movw %ax, %ds
 	movw %ax, %es
 	movw %ax, %fs
@@ -35,13 +37,12 @@ isr_common:
 
 	pushl %esp
 	call interrupt_handler
-	addl $4, %esp
+	movl %eax, %esp
 
-	popl %eax
-	movw %ax, %ds
-	movw %ax, %es
-	movw %ax, %fs
-	movw %ax, %gs
+	popl %gs
+	popl %fs
+	popl %es
+	popl %ds
 
 	popa
 	addl $8, %esp

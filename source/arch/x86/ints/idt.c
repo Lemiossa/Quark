@@ -29,6 +29,7 @@ struct idtr idtr;
 extern U32 isr_table[];
 extern U8 isr_count;
 
+// Configura uma entrada na IDT
 void idt_set_gate(U8 gate, void *isr, U16 segment_selector, U8 attributes) {
   idt[gate].offset_low = (U32)isr & 0xffff;
   idt[gate].offset_high = ((U32)isr >> 16) & 0xffff;
@@ -37,6 +38,7 @@ void idt_set_gate(U8 gate, void *isr, U16 segment_selector, U8 attributes) {
   idt[gate].zero = 0;
 }
 
+// Inicializa a IDT
 void idt_init(void) {
   for (U8 i = 0; i < isr_count; i++) {
     idt_set_gate(i, (void *)isr_table[i], KERNEL_CODE_SELECTOR, 0x8e);
@@ -47,48 +49,18 @@ void idt_init(void) {
   __asm__ volatile("lidt %0" ::"m"(idtr));
 }
 
-char *exception_messages[32] = {
-    "Division by zero",               // 0
-    "Debug exception",                // 1
-    "Non-maskable interrupt",         // 2
-    "Breakpoint",                     // 3
-    "Overflow",                       // 4
-    "Bound range exceeded",           // 5
-    "Invalid opcode",                 // 6
-    "Device not available",           // 7
-    "Double fault",                   // 8
-    "Coprocessor segment overrun",    // 9
-    "Invalid TSS",                    // 10
-    "Segment not present",            // 11
-    "Stack-segment fault",            // 12
-    "General protection fault",       // 13
-    "Page fault",                     // 14
-    "Reserved",                       // 15
-    "x87 floating-point exception",   // 16
-    "Alignment check",                // 17
-    "Machine check",                  // 18
-    "SIMD floating-point exception",  // 19
-    "Virtualization exception",       // 20
-    "Control protection exception",   // 21
-    "Reserved",                       // 22
-    "Reserved",                       // 23
-    "Reserved",                       // 24
-    "Reserved",                       // 25
-    "Reserved",                       // 26
-    "Reserved",                       // 27
-    "Hypervisor injection exception", // 28
-    "VMM communication exception",    // 29
-    "Security exception",             // 30
-    "Reserved"                        // 31
-};
+extern struct regs *exception_handler(struct regs *r);
 
-void interrupt_handler(struct regs *r) {
+// Handler de interrupt
+struct regs *interrupt_handler(struct regs *r) {
   if (r->int_no < 32)
-    panic(exception_messages[r->int_no], r);
+    return exception_handler(r);
 
   if (r->int_no >= 32 && r->int_no <= 47) {
-    pic_execute_irq(r->int_no - 32, r);
+    struct regs *ret = pic_execute_irq(r->int_no - 32, r);
     pic_send_eoi(r->int_no - 32);
-    return;
+    return ret;
   }
+
+  return r;
 }

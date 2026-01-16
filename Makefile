@@ -40,8 +40,8 @@ LINKER := $(SOURCE_DIR)/arch/$(ARCH)/link.ld
 INCLUDES := . arch/$(ARCH)
 
 INCLUDES := $(addprefix -I$(SOURCE_DIR)/,$(INCLUDES))
-CFLAGS := -m32 -std=c11 -Os -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
-					-fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
+CFLAGS := -m32 -std=c11 -O0 -g3 -Wall -Wextra -nostdinc -nostdlib -ffreestanding \
+					-fno-stack-protector -fno-stack-check -fno-lto -fno-PIC -fno-omit-frame-pointer \
 					-mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -fexec-charset=cp437 \
 					-DVERSION=\"$(VERSION_MAJOR).$(VERSION_MINOR)\" $(INCLUDES)
 LDFLAGS := -T$(LINKER) -nostdlib -static
@@ -54,11 +54,15 @@ SOURCE := \
 			arch/$(ARCH)/ints/idt.c \
 			arch/$(ARCH)/ints/pic.c \
 			arch/$(ARCH)/timer.c \
+			arch/$(ARCH)/panic.c \
+			arch/$(ARCH)/except.c \
+			sched.c \
 			kmain.c \
+			pmm.c \
+			e820.c \
 			string.c \
 			terminal.c \
 			graphics.c \
-			panic.c \
 			printk.c
 
 SOURCE := $(addprefix $(SOURCE_DIR)/,$(SOURCE))

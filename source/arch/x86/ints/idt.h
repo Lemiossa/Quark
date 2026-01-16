@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 struct regs {
-  U32 ds;
+  U32 gs, fs, es, ds;
   U32 edi, esi, ebp, esp, ebx, edx, ecx, eax;
   U32 int_no, err_code;
   U32 eip, cs, eflags, usersp, ss;

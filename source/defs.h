@@ -30,9 +30,12 @@
 #define KERNEL_E820_LOC 0x80000
 
 // Frequencia do PIT do kernel
-#define KERNEL_PIT_FREQ 100
+#define KERNEL_PIT_FREQ 1000
 
 // Intervalo de blink do cursor
 #define KERNEL_CURSOR_BLINK_MS 500
+
+// Fatia do tempo que cada task pode ter
+#define KERNEL_TASK_TIME_SLICE 30
 
 #endif // DEFS_H

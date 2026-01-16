@@ -81,8 +81,8 @@ void pic_set_irq_handler(U8 irq, irq_handler_t handler) {
 }
 
 // Executa uma IRQ
-void pic_execute_irq(U8 irq, struct regs *r) {
+struct regs *pic_execute_irq(U8 irq, struct regs *r) {
   if (irq >= 16)
-    return;
-  irqs[irq](r);
+    return r;
+  return irqs[irq](r);
 }

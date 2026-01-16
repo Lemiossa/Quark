@@ -167,7 +167,7 @@ gdt:
 	.byte 0x00
 	.byte 0x00
 
-	// CODE32
+	// KERNEL CODE32
 	.word 0xffff
 	.word 0x0000
 	.byte 0x00
@@ -175,7 +175,7 @@ gdt:
 	.byte 0b11000000 | 0xf
 	.byte 0x00
 
-	// DATA32
+	// KERNEL DATA32
 	.word 0xffff
 	.word 0x0000
 	.byte 0x00

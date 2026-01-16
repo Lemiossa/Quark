@@ -2,10 +2,10 @@
  * timer.c
  * Criado por Matheus Leme Da Silva
  */
-#include <../../defs.h>
-#include <../../stdint.h>
+#include <defs.h>
 #include <ints/pic.h>
 #include <io.h>
+#include <stdint.h>
 
 #define MAKE_PIT_COMMAND(channel, access, op, bcd)                             \
   (((channel) << 6) | ((access) << 4) | ((op) << 1) | ((bcd) & 1))
@@ -25,14 +25,14 @@ void timer_set_freq(U16 freq) {
 
 U32 volatile ticks = 0;
 
-// Handlers
 extern void terminal_tick();
+extern struct regs *sched(struct regs *r);
 
 // IRQ 0
-void timer(struct regs *r) {
-  (void)r;
+struct regs *timer(struct regs *r) {
   terminal_tick();
   ticks++;
+  return sched(r);
 }
 
 // Inicializa TIMER

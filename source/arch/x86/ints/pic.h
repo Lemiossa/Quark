@@ -15,13 +15,13 @@
 
 #define PIC_EOI 0x20
 
-typedef void (*irq_handler_t)(struct regs *r);
+typedef struct regs *(*irq_handler_t)(struct regs *r);
 
 void pic_send_eoi(U8 irq);
 void pic_remap(void);
 void pic_mask_irq(U8 irq);
 void pic_unmask_irq(U8 irq);
 void pic_set_irq_handler(U8 irq, irq_handler_t handler);
-void pic_execute_irq(U8 irq, struct regs *r);
+struct regs *pic_execute_irq(U8 irq, struct regs *r);
 
 #endif // PIC_H

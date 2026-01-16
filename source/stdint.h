@@ -15,4 +15,6 @@ typedef signed short I16;
 typedef signed int I32;
 typedef signed long long I64;
 
+typedef unsigned long UPTR;
+
 #endif // STDINT_H
