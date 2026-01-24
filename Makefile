@@ -11,9 +11,12 @@ SFDISK := /sbin/sfdisk
 NASM := nasm
 QEMU := QEMU_AUDIO_DRV=pa qemu-system-i386
 MKFS := /sbin/mkfs.fat
+CC := i686-elf-gcc
+LD := i686-elf-ld
+OBJCOPY := i686-elf-objcopy
 
-IMAGE_SIZE := 16M
-IMAGE_FAT := 16
+IMAGESIZE := 16M
+IMAGEFAT := 16
 IMAGE := $(BUILDDIR)/Quark.img
 
 QEMU_FLAGS := -drive file=$(IMAGE),if=ide,format=raw,media=disk -m 16M
@@ -32,14 +35,21 @@ qemu: $(IMAGE)
 
 # IMAGE =======================================================================
 
-$(IMAGE): $(BOOTLOADER)
+IMAGEROOT := $(BUILDDIR)/IMGROOT
+
+$(IMAGEROOT):
+	mkdir -p $@
+	touch $@/KERNEL.SYS
+
+$(IMAGE): $(BOOTLOADER) $(IMAGEROOT)
 	mkdir -p $(dir $@)
 	dd if=/dev/zero of=$@ bs=512 count=63 status=progress
 	dd if=$(BOOTLOADER) of=$@ bs=1 status=progress conv=notrunc
-	dd if=/dev/zero of=$(basename $@).p1 bs=$(IMAGE_SIZE) count=1 status=progress
-	$(MKFS) -F $(IMAGE_FAT) -n "QUARK" $(basename $@).p1
+	dd if=/dev/zero of=$(basename $@).p1 bs=$(IMAGESIZE) count=1 status=progress
+	$(MKFS) -F $(IMAGEFAT) -n "QUARK" $(basename $@).p1
+	mcopy -i $(basename $@).p1 -s $(IMAGEROOT)/* "::/"
 	dd if=$(basename $@).p1 >> $@
-	echo "label:dos\n63,$(IMAGE_SIZE),0E,*\n" | $(SFDISK) $@
+	echo "label:dos\n63,$(IMAGESIZE),0E,*\n" | $(SFDISK) $@
 
 # BOOTLOADER ==================================================================
 

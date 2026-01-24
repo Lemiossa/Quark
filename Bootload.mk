@@ -5,10 +5,6 @@ BOOTSECT := $(BINDIR)/Boot/Bootsect.bin
 STAGE2 := $(BINDIR)/Boot/Stage2.bin
 STAGE2_ELF := $(BINDIR)/Boot/Stage2.elf
 
-CC ?= gcc
-LD ?= ld
-OBJCOPY ?= objcopy
-
 CFLAGS := -std=c11 -m32 -Os \
 					-ffreestanding -fno-stack-protector \
 					-Wall -Wextra \
@@ -20,6 +16,7 @@ SOURCE := \
 					Disk.asm \
 					Util.c \
 					Vga.c \
+					Fat.c \
 					Main.c
 SOURCE := $(addprefix $(SOURCEDIR)/Boot/,$(SOURCE))
 
