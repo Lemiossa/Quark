@@ -1,0 +1,22 @@
+; Entry.asm
+; Created by Matheus Leme Da Silva
+BITS 32
+SECTION .text.entry
+
+EXTERN Main
+
+GLOBAL _START
+_START:
+	CLI
+	MOV ESP, STACK_TOP
+
+	CALL Main
+
+HANG:
+	CLI
+	HLT
+
+SECTION .bss
+STACK_BOTTOM:
+	RESB 65536
+STACK_TOP:

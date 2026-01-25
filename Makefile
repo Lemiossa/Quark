@@ -19,8 +19,9 @@ IMAGESIZE := 16M
 IMAGEFAT := 16
 IMAGE := $(BUILDDIR)/Quark.img
 
-QEMU_FLAGS := -drive file=$(IMAGE),if=ide,format=raw,media=disk -m 16M
+QEMU_FLAGS := -drive file=$(IMAGE),if=ide,format=raw,media=disk -m 16M -serial stdio
 BOOTLOADER := $(BINDIR)/Bootload.bin
+KERNEL := $(BINDIR)/Kernel.bin
 
 .PHONY: all
 all: $(IMAGE)
@@ -39,9 +40,10 @@ IMAGEROOT := $(BUILDDIR)/IMGROOT
 
 $(IMAGEROOT):
 	mkdir -p $@
-	echo "Hello kernel!\r\n" > $@/KERNEL.TXT
+	mkdir -p $@/boot
+	cp $(KERNEL) $@/boot/Kernel.sys
 
-$(IMAGE): $(BOOTLOADER) $(IMAGEROOT)
+$(IMAGE): $(BOOTLOADER) $(KERNEL) $(IMAGEROOT)
 	mkdir -p $(dir $@)
 	dd if=/dev/zero of=$@ bs=512 count=63 status=progress
 	dd if=$(BOOTLOADER) of=$@ bs=1 status=progress conv=notrunc
@@ -54,4 +56,8 @@ $(IMAGE): $(BOOTLOADER) $(IMAGEROOT)
 # BOOTLOADER ==================================================================
 
 include Bootload.mk
+
+# KERNEL ======================================================================
+
+include Kernel.mk
 

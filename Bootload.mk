@@ -5,33 +5,34 @@ BOOTSECT := $(BINDIR)/Boot/Bootsect.bin
 STAGE2 := $(BINDIR)/Boot/Stage2.bin
 STAGE2_ELF := $(BINDIR)/Boot/Stage2.elf
 
-CFLAGS := -std=c11 -m32 -Os \
+BOOTLOADER_CFLAGS := -std=c11 -m32 -O2 \
 					-ffreestanding -fno-stack-protector \
 					-Wall -Wextra \
 					-mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
-LDFLAGS := -melf_i386 -T$(SOURCEDIR)/Boot/Bootload.ld
+BOOTLOADER_LDFLAGS := -melf_i386 -T$(SOURCEDIR)/Boot/Bootload.ld
 
-SOURCE := \
+BOOTLOADER_SOURCE := \
 					Entry.asm \
 					Disk.asm \
 					Util.c \
 					Vga.c \
 					Fat.c \
 					Main.c
-SOURCE := $(addprefix $(SOURCEDIR)/Boot/,$(SOURCE))
 
-SOURCE_C := $(filter %.c,$(SOURCE))
-SOURCE_ASM := $(filter %.asm,$(SOURCE))
+BOOTLOADER_SOURCE := $(addprefix $(SOURCEDIR)/Boot/,$(BOOTLOADER_SOURCE))
 
-OBJ_C := $(patsubst $(SOURCEDIR)/Boot/%.c,$(OBJDIR)/Boot/C/%.o,$(SOURCE_C))
-OBJ_ASM := $(patsubst $(SOURCEDIR)/Boot/%.asm,$(OBJDIR)/Boot/Asm/%.o,$(SOURCE_ASM))
+BOOTLOADER_SOURCE_C := $(filter %.c,$(BOOTLOADER_SOURCE))
+BOOTLOADER_SOURCE_ASM := $(filter %.asm,$(BOOTLOADER_SOURCE))
 
-OBJ := $(OBJ_C) $(OBJ_ASM)
+BOOTLOADER_OBJ_C := $(patsubst $(SOURCEDIR)/Boot/%.c,$(OBJDIR)/Boot/C/%.o,$(BOOTLOADER_SOURCE_C))
+BOOTLOADER_OBJ_ASM := $(patsubst $(SOURCEDIR)/Boot/%.asm,$(OBJDIR)/Boot/Asm/%.o,$(BOOTLOADER_SOURCE_ASM))
 
-DEP_C := $(patsubst $(SOURCEDIR)/Boot/%.c,$(DEPDIR)/Boot/C/%.d,$(SOURCE_C))
-DEP_ASM := $(patsubst $(SOURCEDIR)/Boot/%.asm,$(DEPDIR)/Boot/Asm/%.d,$(SOURCE_ASM))
+BOOTLOADER_OBJ := $(BOOTLOADER_OBJ_C) $(BOOTLOADER_OBJ_ASM)
 
-DEP := $(DEP_C) $(DEP_ASM)
+BOOTLOADER_DEP_C := $(patsubst $(SOURCEDIR)/Boot/%.c,$(DEPDIR)/Boot/C/%.d,$(BOOTLOADER_SOURCE_C))
+BOOTLOADER_DEP_ASM := $(patsubst $(SOURCEDIR)/Boot/%.asm,$(DEPDIR)/Boot/Asm/%.d,$(BOOTLOADER_SOURCE_ASM))
+
+BOOTLOADER_DEP := $(BOOTLOADER_DEP_C) $(BOOTLOADER_DEP_ASM)
 
 $(BOOTLOADER): $(BOOTSECT) $(STAGE2)
 	cat $^ > $@
@@ -40,9 +41,9 @@ $(BOOTSECT): $(SOURCEDIR)/Boot/Bootsect.asm
 	mkdir -p $(dir $@)
 	$(NASM) $< -f bin -o $@
 
-$(STAGE2_ELF): $(OBJ)
+$(STAGE2_ELF): $(BOOTLOADER_OBJ)
 	mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) -o $@ $^
+	$(LD) $(BOOTLOADER_LDFLAGS) -o $@ $^
 
 $(STAGE2): $(STAGE2_ELF)
 	mkdir -p $(dir $@)
@@ -50,10 +51,10 @@ $(STAGE2): $(STAGE2_ELF)
 
 $(OBJDIR)/Boot/C/%.o: $(SOURCEDIR)/Boot/%.c
 	mkdir -p $(dir $@) $(dir $(DEPDIR)/Boot/C/$*)
-	$(CC) $(CFLAGS) -c $< -o $@ -MMD -MF $(DEPDIR)/Boot/C/$*.d
+	$(CC) $(BOOTLOADER_CFLAGS) -c $< -o $@ -MMD -MF $(DEPDIR)/Boot/C/$*.d
 
 $(OBJDIR)/Boot/Asm/%.o: $(SOURCEDIR)/Boot/%.asm
 	mkdir -p $(dir $@) $(dir $(DEPDIR)/Boot/Asm/$*)
 	$(NASM) -f elf32 $< -o $@ -MD -MF $(DEPDIR)/Boot/Asm/$*.d
 
--include $(DEP)
+-include $(BOOTLOADER_DEP)
