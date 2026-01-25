@@ -21,7 +21,7 @@ void CursorUpdate(U16 x, U16 y) {
   OutU8(0x3D4, 0xF);
   OutU8(0x3D5, (U8)pos & 0xFF);
   OutU8(0x3D4, 0xE);
-  OutU8(0x3D5, (U8)pos >> 8);
+  OutU8(0x3D5, (U8)(pos >> 8) & 0xFF);
 }
 
 // Put char C at X and Y position with current_attributes
@@ -29,7 +29,23 @@ void Putcat(U16 x, U16 y, char c) {
   if (x >= VGA_WIDTH || y >= VGA_HEIGHT)
     return;
 
-  Vga[y * VGA_WIDTH + x] = (Current_attributes << 8) | c;
+  U8 uc = c;
+  Vga[y * VGA_WIDTH + x] = (Current_attributes << 8) | uc;
+}
+
+// Scroll N lines the screen
+void Scroll(U16 n) {
+  for (U16 y = n; y < VGA_HEIGHT; y++) {
+    for (U16 x = 0; x < VGA_WIDTH; x++) {
+      Vga[(y - n) * VGA_WIDTH + x] = Vga[y * VGA_WIDTH + x];
+    }
+  }
+
+  for (int y = VGA_HEIGHT - n; y < VGA_HEIGHT; y++) {
+    for (int x = 0; x < VGA_WIDTH; x++) {
+      Vga[y * VGA_WIDTH + x] = 0x0720;
+    }
+  }
 }
 
 // Print char C at current cursor position and move de Cursor, scrolls if needed
@@ -38,8 +54,11 @@ void Putc(char c) {
     Cursor_x = 0;
   } else if (c == '\n') {
     Cursor_y++;
+  } else if (c == '\t') {
+    Cursor_x += 4;
   } else {
-    Putcat(Cursor_x++, Cursor_y, c);
+    Putcat(Cursor_x, Cursor_y, c);
+    Cursor_x++;
   }
 
   if (Cursor_x >= VGA_WIDTH) {
@@ -48,7 +67,8 @@ void Putc(char c) {
   }
 
   if (Cursor_y >= VGA_HEIGHT) {
-    Memcpy(Vga, Vga + (VGA_WIDTH * 2), (VGA_WIDTH * (VGA_HEIGHT - 1)) * 2);
+    Scroll(1);
+    Cursor_y = VGA_HEIGHT - 1;
   }
 
   CursorUpdate(Cursor_x, Cursor_y);
