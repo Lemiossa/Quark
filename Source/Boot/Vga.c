@@ -4,7 +4,6 @@
  */
 #include "Io.h"
 #include "Types.h"
-#include "Util.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -14,6 +13,7 @@ U16 Cursor_x = 0;
 U16 Cursor_y = 0;
 U8 Current_attributes = 0x07;
 
+// Text-mode-cursor https://wiki.osdev.org/Text_Mode_Cursor
 // Updates the cursor position
 void CursorUpdate(U16 x, U16 y) {
   U16 pos = y * VGA_WIDTH + x;
@@ -22,6 +22,16 @@ void CursorUpdate(U16 x, U16 y) {
   OutU8(0x3D5, (U8)pos & 0xFF);
   OutU8(0x3D4, 0xE);
   OutU8(0x3D5, (U8)(pos >> 8) & 0xFF);
+}
+
+// Get actual cursor position on text mode
+U16 GetCursorPos(void) {
+  U16 pos = 0;
+  OutU8(0x3D4, 0xF);
+  pos |= InU8(0x3D5);
+  OutU8(0x3D4, 0xE);
+  pos |= ((U16)InU8(0x3D5)) << 8;
+  return pos;
 }
 
 // Put char C at X and Y position with current_attributes
@@ -50,6 +60,9 @@ void Scroll(U16 n) {
 
 // Print char C at current cursor position and move de Cursor, scrolls if needed
 void Putc(char c) {
+  U16 pos = GetCursorPos();
+  Cursor_y = pos / VGA_WIDTH;
+  Cursor_x = pos % VGA_WIDTH;
   if (c == '\r') {
     Cursor_x = 0;
   } else if (c == '\n') {
@@ -78,17 +91,5 @@ void Putc(char c) {
 void Puts(const char *s) {
   while (*s) {
     Putc(*s++);
-  }
-}
-
-// Clear the screen
-void Clear(void) {
-  Cursor_x = 0;
-  Cursor_y = 0;
-  Current_attributes = 0x07;
-  for (U16 y = 0; y < VGA_HEIGHT; y++) {
-    for (U16 x = 0; x < VGA_WIDTH; x++) {
-      Putcat(x, y, ' ');
-    }
   }
 }

@@ -15,6 +15,8 @@
 	XOR AX, AX
 	MOV DS, AX
 	MOV ES, AX
+	MOV FS, AX
+	MOV GS, AX
 	MOV SS, AX
 	STI
 %endmacro
@@ -31,5 +33,7 @@
 	MOV AX, 0x10
 	MOV DS, AX
 	MOV ES, AX
+	MOV FS, AX
+	MOV GS, AX
 	MOV SS, AX
 %endmacro

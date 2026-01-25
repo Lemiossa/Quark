@@ -10,6 +10,8 @@ _START:
 	XOR AX, AX
 	MOV DS, AX
 	MOV ES, AX
+	MOV FS, AX
+	MOV GS, Ax
 	MOV SS, AX
 	MOV SP, 0xFFFF
 	STI
@@ -41,6 +43,8 @@ _START32:
 	MOV AX, 0x10
 	MOV DS, AX
 	MOV ES, AX
+	MOV FS, AX
+	MOV GS, AX
 	MOV SS, AX
 	MOV ESP, STACK_TOP
 
@@ -67,7 +71,7 @@ GDT:
 	DB 0
 
 	; CODE32
-	DW 0xffff
+	DW 0xFFFF
 	DW 0
 	DB 0
 	DB 0b10011010
@@ -75,7 +79,7 @@ GDT:
 	DB 0
 
 	; DATA32
-	DW 0xffff
+	DW 0xFFFF
 	DW 0
 	DB 0
 	DB 0b10010010
@@ -83,7 +87,7 @@ GDT:
 	DB 0
 
 	; CODE16
-	DW 0xffff
+	DW 0xFFFF
 	DW 0
 	DB 0
 	DB 0b10011010
@@ -91,7 +95,7 @@ GDT:
 	DB 0
 
 	; DATA16
-	DW 0xffff
+	DW 0xFFFF
 	DW 0
 	DB 0
 	DB 0b10010010

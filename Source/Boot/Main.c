@@ -21,10 +21,11 @@ struct MbrPart *PartTable = (struct MbrPart *)&Mbr[446];
 int part = 0;
 void FilenameToFatname(char *filename, char *out);
 
+#define FILEPATH "/BOOT/KERNEL.SYS"
+
 // The Main function don't return
 void Main(void) {
-  Clear();
-  Puts("Loading...");
+  Puts("Loading...\r\n");
 
   // Read the MBR
   DiskRead(BootDrive, 0, Mbr);
@@ -44,17 +45,24 @@ void Main(void) {
     Panic();
   }
 
-#define FILEPATH "/kernel.txt"
-
   struct FatDirEntry e;
-  if (FatFind(p, FILEPATH, &e) != 0)
-    Puts("File" FILEPATH " not found!\r\n");
-  else
-    Puts("File " FILEPATH " found!\r\n");
+  if (FatFind(p, FILEPATH, &e) != 0) {
+    Puts("Failed to find " FILEPATH "\r\n");
+    Panic();
+  } else {
+    Puts("Size: 0x");
+    PutHexU32(e.FileSz);
+    Puts("\r\n");
+  }
 
-  Puts("Cluster : 0x");
-  PutHexU16(e.ClstLo);
-  Puts("\r\n");
+  void *file_content = (void *)0x100000;
+  if (FatRead(p, e, 0, e.FileSz, file_content) != e.FileSz) {
+    Puts("Failed to read " FILEPATH "\r\n");
+    Panic();
+  }
+
+  void (*func)(void) = file_content;
+  func();
 
   for (;;)
     ;

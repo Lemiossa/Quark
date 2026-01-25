@@ -3,6 +3,7 @@
  * Created by Matheus Leme Da Silva
  */
 #include "Fat.h"
+#include "MemDefs.h"
 #include "Util.h"
 
 // Returns 1 if cluster is end
@@ -211,4 +212,56 @@ int FatFind(struct FatPart p, const char *path, struct FatDirEntry *out) {
     *out = entry;
 
   return 0;
+}
+
+// Read N bytes at OFFSET in E;
+// Returns total of bytes readed
+U32 FatRead(struct FatPart p, struct FatDirEntry e, U32 off, U32 n, void *d) {
+  if (e.ClstLo < 2 || !d)
+    return 0;
+
+  if (off >= e.FileSz)
+    return 0;
+
+  U32 clstSize = p.Bpb.SctsPerClst * SCT_SIZE;
+  U16 clst = e.ClstLo;
+
+  U16 skip = off / clstSize;
+  U32 offInClst = off % clstSize;
+
+  // Skip clsts
+  for (U32 i = 0; i < skip; i++) {
+    clst = FatNextClst(p, clst);
+    if (FatClstIsEnd(p, clst))
+      return 0;
+  }
+
+  U8 *dest = (U8 *)d;
+
+  U32 remaining = n;
+  U32 curOff = 0;
+  U32 totalRead = 0;
+  while (!FatClstIsEnd(p, clst) && remaining > 0) {
+    U32 clstLba = FatClstToLba(p, clst);
+    U32 localOff = offInClst;
+    U8 *buf = (U8 *)CLST_BUFFER;
+
+    for (U32 i = 0; i < p.Bpb.SctsPerClst; i++) {
+      DiskRead(p.Drive, clstLba + i, &buf[i * SCT_SIZE]);
+    }
+
+    U32 maxInClst = clstSize - localOff;
+    U32 toRead = remaining < maxInClst ? remaining : maxInClst;
+    for (U32 i = 0; i < toRead; i++) {
+      dest[curOff + i] = buf[localOff + i];
+    }
+
+    remaining -= toRead;
+    totalRead += toRead;
+    curOff += toRead;
+    localOff = 0;
+    clst = FatNextClst(p, clst);
+  }
+
+  return totalRead;
 }

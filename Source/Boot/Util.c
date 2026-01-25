@@ -3,10 +3,11 @@
  * Created by Matheus Leme Da Silva
  */
 #include "Util.h"
+#include "MemDefs.h"
 #include "Types.h"
 #include "Vga.h"
 
-const char *HexChars = "0123456789ABCDEF";
+const char *PrintChars = "0123456789ABCDEF";
 
 // Copy N bytes from S to D
 void Memcpy(void *d, const void *s, U32 n) {
@@ -46,8 +47,8 @@ int Memcmp(const void *s1, const void *s2, U32 n) {
 
 // Prints a hex byte
 void PutHexU8(U8 b) {
-  Putc(HexChars[b >> 4]);
-  Putc(HexChars[b & 0xF]);
+  Putc(PrintChars[b >> 4]);
+  Putc(PrintChars[b & 0xF]);
 }
 
 // Prints a hex word
@@ -73,7 +74,7 @@ void Panic(void) {
 // Read LBA sector using BIOS and copy to BUFFER
 // Useful for if you want to charge things above 1MiB
 void DiskRead(U8 drive, U32 lba, void *buffer) {
-  void *lbuf = (void *)0x5000;
+  void *lbuf = (void *)DISK_BUFFER;
   Memset(lbuf, 0, 512);
   Memset(buffer, 0, 512);
 
