@@ -12,6 +12,7 @@ KERNEL_LDFLAGS := -melf_i386 -T$(SOURCEDIR)/Kernel/Kernel.ld
 KERNEL_SOURCE := \
 					Entry.asm \
 					Vga.c \
+					Gdt.c \
 					Main.c
 KERNEL_SOURCE := $(addprefix $(KERNEL_SOURCEDIR)/Kernel/,$(KERNEL_SOURCE))
 
