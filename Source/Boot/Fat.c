@@ -5,14 +5,17 @@
 #include "Fat.h"
 #include "MemDefs.h"
 #include "Util.h"
+#include "Vga.h"
 
 // Returns 1 if cluster is end
-int FatClstIsEnd(struct FatPart p, U16 clst) {
-	U16 val = 0;
+int FatClstIsEnd(struct FatPart p, U32 clst) {
+	U32 val = 0;
 	if (p.GFatType == PART_FAT12) {
 		val = 0xFF8;
 	} else if (p.GFatType == PART_FAT16) {
 		val = 0xFFF8;
+	} else if (p.GFatType == PART_FAT32) {
+		val = 0xFFFFFF8;
 	} else {
 		return 1;
 	}
@@ -21,12 +24,14 @@ int FatClstIsEnd(struct FatPart p, U16 clst) {
 }
 
 // Returns 1 if cluster is bad
-int FatClstIsBad(struct FatPart p, U16 clst) {
-	U16 val = 0;
+int FatClstIsBad(struct FatPart p, U32 clst) {
+	U32 val = 0;
 	if (p.GFatType == PART_FAT12) {
 		val = 0xFF7;
 	} else if (p.GFatType == PART_FAT16) {
 		val = 0xFFF7;
+	} else if (p.GFatType == PART_FAT32) {
+		val = 0xFFFFFF7;
 	} else {
 		return 1;
 	}
@@ -35,7 +40,7 @@ int FatClstIsBad(struct FatPart p, U16 clst) {
 }
 
 // Converts cluster to LBA
-U32 FatClstToLba(struct FatPart p, U16 clst) {
+U32 FatClstToLba(struct FatPart p, U32 clst) {
 	return ((clst - 2) * p.Bpb.SctsPerClst) + p.GDataLba;
 }
 
@@ -84,7 +89,7 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 	DiskRead(drive, StartLBA, vbr);
 
 	Memcpy(&p.Bpb, vbr, sizeof(struct Bpb));
-	Memcpy(&p.Ebpb, &vbr[sizeof(struct Bpb)], sizeof(struct Ebpb));
+	Memcpy(&p.Ebpb, &vbr[sizeof(struct Bpb)], sizeof(union Ebpb));
 
 	if (p.Bpb.BytesPerSct != SCT_SIZE) {
 		p.GFatType = PART_INV;
@@ -95,7 +100,7 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 	p.Drive = drive;
 
 	p.GTotalScts = p.Bpb.TotalScts16 == 0 ? p.Bpb.TotalScts32 : p.Bpb.TotalScts16;
-	p.GFatSz = p.Bpb.SctsPerFat;
+	p.GFatSz = p.Bpb.SctsPerFat == 0 ? p.Ebpb.Ebpb32.SctsPerFat32 : p.Bpb.SctsPerFat;
 	p.GRootDirScts = ((p.Bpb.RootDirEnts * 32) + (SCT_SIZE - 1)) / SCT_SIZE;
 	p.GFatLba = StartLBA + p.Bpb.ResScts;
 	p.GDataLba = p.GFatLba + (p.Bpb.FatCount * p.GFatSz) + p.GRootDirScts;
@@ -109,6 +114,8 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 		p.GFatType = PART_FAT12;
 	} else if (TotalClsts < 65525) {
 		p.GFatType = PART_FAT16;
+	} else {
+		p.GFatType = PART_FAT32;
 	}
 
 	if (out)
@@ -118,26 +125,36 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 }
 
 // Returns next cluster
-U16 FatNextClst(struct FatPart part, U16 clst) {
-	if (part.GFatType == PART_INV || clst < 2)
-		return 0xFFF8;
+U32 FatNextClst(struct FatPart p, U32 clst) {
+	if (p.GFatType == PART_INV || clst < 2)
+		return 0;
 
 	U8 buf[SCT_SIZE * 2];
-	U32 fatOffset = part.GFatType == PART_FAT12	 ? (clst + (clst / 2))
-												: part.GFatType == PART_FAT16 ? (clst * 2)
-												: 0;
-	U32 fatSector = part.GFatLba + (fatOffset / SCT_SIZE);
+	U32 fatOffset;
+
+	if (p.GFatType == PART_FAT12)
+		fatOffset = (clst + (clst / 2));
+	else if (p.GFatType == PART_FAT16)
+		fatOffset = (clst * 2);
+	else if (p.GFatType == PART_FAT32)
+		fatOffset = (clst * 4);
+
+	U32 fatSector = p.GFatLba + (fatOffset / SCT_SIZE);
 	U32 entryOffset = fatOffset % SCT_SIZE;
 
-	U16 val = 0;
-	if (part.GFatType == PART_FAT12) {
-		DiskRead(part.Drive, fatSector, buf);
-		DiskRead(part.Drive, fatSector + 1, &buf[512]);
-		val = *(U16 *)&buf[entryOffset];
+	U32 val = 0;
+	if (p.GFatType == PART_FAT12) {
+		DiskRead(p.Drive, fatSector, buf);
+		DiskRead(p.Drive, fatSector + 1, &buf[512]);
+		val = *(U32 *)&buf[entryOffset];
 		val = (clst & 1) ? val >> 4 : val & 0xFFF;
-	} else if (part.GFatType == PART_FAT16) {
-		DiskRead(part.Drive, fatSector, buf);
-		val = *(U16 *)&buf[entryOffset];
+	} else if (p.GFatType == PART_FAT16) {
+		DiskRead(p.Drive, fatSector, buf);
+		val = *(U32 *)&buf[entryOffset];
+	} else if (p.GFatType == PART_FAT32) {
+		DiskRead(p.Drive, fatSector, buf);
+		val = *(U32 *)&buf[entryOffset];
+		val &= 0xFFFFFFF;
 	}
 
 	return val;
@@ -146,11 +163,15 @@ U16 FatNextClst(struct FatPart part, U16 clst) {
 // Find Dir entry in a directory;
 // Returns non zero if have error;
 // If clst is zero and FAT is 12/16, reads in root directory;
+// TODO: LFN Support
 int FatFindInDir(struct FatPart p, U16 clst, struct FatDirEntry *out,
 				 char *filename) {
 	if (!filename)
 		return 1;
 	U16 curClst = clst;
+
+	if (clst == 0 && !(p.GFatType == PART_FAT12 || p.GFatType == PART_FAT16))
+		return 1;
 
 	char fatname[11];
 	FilenameToFatname(filename, fatname);
@@ -192,7 +213,7 @@ int FatFind(struct FatPart p, const char *path, struct FatDirEntry *out) {
 		return 1;
 
 	struct FatDirEntry entry;
-	U16 curClst = 0;
+	U16 curClst = p.GFatType == PART_FAT32 ? p.Ebpb.Ebpb32.RootDirClst : 0;
 	U32 part = 0;
 	while (1) {
 		char filename[11];
@@ -224,9 +245,9 @@ U32 FatRead(struct FatPart p, struct FatDirEntry e, U32 off, U32 n, void *d) {
 		return 0;
 
 	U32 clstSize = p.Bpb.SctsPerClst * SCT_SIZE;
-	U16 clst = e.ClstLo;
+	U32 clst = e.ClstLo;
 
-	U16 skip = off / clstSize;
+	U32 skip = off / clstSize;
 	U32 offInClst = off % clstSize;
 
 	// Skip clsts

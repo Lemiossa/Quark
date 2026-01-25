@@ -23,7 +23,7 @@ struct Bpb {
 	U32 TotalScts32;
 } __attribute__((packed));
 
-struct Ebpb {
+struct Ebpb16 {
 	U8 DriveNum;
 	U8 Res;
 	U8 Sig;
@@ -31,6 +31,27 @@ struct Ebpb {
 	U8 VolLabel[11];
 	U8 SysId[8];
 } __attribute__((packed));
+
+struct Ebpb32 {
+	U32 SctsPerFat32;
+	U16 Flags;
+	U16 FatVersion;
+	U32 RootDirClst;
+	U16 FsInfo;
+	U16 BkpSct;
+	U8 Res[12];
+	U8 DriveNum;
+	U8 NtFlags;
+	U8 Sig;
+	U32 VolId;
+	U8 VolLabel[11];
+	U8 SysId[8];
+} __attribute__((packed));
+
+union Ebpb {
+	struct Ebpb16 Ebpb16;
+	struct Ebpb32 Ebpb32;
+};
 
 struct FatDirEntry {
 	U8 Name[11];
@@ -56,7 +77,7 @@ struct FatDirEntry {
 
 struct FatPart {
 	struct Bpb Bpb;
-	struct Ebpb Ebpb;
+	union Ebpb Ebpb;
 
 	U32 StartLBA;
 
@@ -76,6 +97,7 @@ struct FatPart {
 #define PART_INV 0
 #define PART_FAT12 1
 #define PART_FAT16 2
+#define PART_FAT32 3
 
 int FatInit(U8 drive, U32 StartLBA, struct FatPart *out);
 int FatFind(struct FatPart p, const char *path, struct FatDirEntry *out);

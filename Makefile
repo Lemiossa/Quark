@@ -2,7 +2,7 @@
 # Created by Matheus Leme Da Silva
 
 SOURCEDIR := $(CURDIR)/Source
-BUILDDIR := $(CURDIR)/Build
+BUILDDIR ?= $(CURDIR)/Build
 BINDIR := $(BUILDDIR)/Bin
 OBJDIR := $(BUILDDIR)/Obj
 DEPDIR := $(BUILDDIR)/Dep
@@ -15,8 +15,8 @@ CC := i686-elf-gcc
 LD := i686-elf-ld
 OBJCOPY := i686-elf-objcopy
 
-IMAGESIZE := 16M
-IMAGEFAT := 16
+IMAGESIZE := 64M
+IMAGEFAT := 32
 IMAGE := $(BUILDDIR)/Quark.img
 
 QEMU_FLAGS := -drive file=$(IMAGE),if=ide,format=raw,media=disk -m 16M -serial stdio
