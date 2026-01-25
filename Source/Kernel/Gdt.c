@@ -19,15 +19,25 @@ void GdtSetEnt(U16 ent, U32 limit, U32 base, U8 access, U8 flags) {
   Gdt[ent].BaseLo = base & 0xFFFF;
   Gdt[ent].BaseMi = (base >> 16) & 0xFF;
   Gdt[ent].Access = access;
-  Gdt[ent].Flags = ((flags & 0xF) << 4) | (limit >> 16);
+  Gdt[ent].Flags = ((flags & 0xF) << 4) | ((limit >> 16) & 0xF);
   Gdt[ent].BaseHi = (base >> 24) & 0xFF;
 }
 
 // Initializes GDT
 void GdtInit(void) {
   GdtSetEnt(0, 0, 0, 0, 0);
-  GdtSetEnt(1, 0xFFFFF, 0, 0b10011010, 0b1100);
-  GdtSetEnt(2, 0xFFFFF, 0, 0b10010010, 0b1100);
+  GdtSetEnt(1, 0xFFFFF, 0, 0x9A, 0xC);
+  GdtSetEnt(2, 0xFFFFF, 0, 0x92, 0xC);
 
+  Gdtr.Size = (sizeof(struct GdtEnt) * GDT_ENTRIES) - 1;
+  Gdtr.Base = (U32)&Gdt[0];
   __asm__ volatile("lgdt %0" ::"m"(Gdtr));
+  __asm__ volatile("ljmp $0x08,$flush;flush:"
+                   "movw $0x10, %%ax;"
+                   "movw %%ax, %%ds;"
+                   "movw %%ax, %%es;"
+                   "movw %%ax, %%fs;"
+                   "movw %%ax, %%gs;"
+                   "movw %%ax, %%ss;" ::
+                       : "memory", "ax");
 }
