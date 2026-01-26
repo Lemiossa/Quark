@@ -65,18 +65,18 @@ GetDriveParameters:
 
 ; Read disk using EDD
 ; Returns error code(0 == no error)
-; U8 ExtendedDiskRead(U8 drive, U32 lba, void *buffer);
+; U8 ExtendedDiskRead(U8 drive, U32 lba, U16 count, void *buffer);
 GLOBAL ExtendedDiskRead
 ExtendedDiskRead:
 	PUSH EBP
 	MOV EBP, ESP
 
-	PUSHAD
-	ToRealMode
-	BITS 16
-
 	MOV ECX, [EBP+12]
-	MOV EDI, [EBP+16]
+	MOV [DISK_PACKET.LBA_LOW], ECX
+	MOV CX, [EBP+16]
+	MOV [DISK_PACKET.SECTORS], CX
+
+	MOV EDI, [EBP+20]
 
 	PUSH EDI
 	AND EDI, 0xF
@@ -88,13 +88,17 @@ ExtendedDiskRead:
 	MOV [DISK_PACKET.SEGMENT], DI
 	POP EDI
 
-	MOV [DISK_PACKET.LBA_LOW], ECX
+
+	MOV DL, [EBP + 8]
+
+	PUSHAD
+	ToRealMode
+	BITS 16
 
 	PUSH DS
 	PUSH DI
 
 	MOV AH, 0x42
-	MOV DL, [EBP + 8]
 	MOV SI, DISK_PACKET
 	INT 0x13
 	MOV [.RET], AH

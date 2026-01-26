@@ -21,14 +21,14 @@ struct MbrPart *PartTable = (struct MbrPart *)&Mbr[446];
 int part = 0;
 void FilenameToFatname(char *filename, char *out);
 
-#define FILEPATH "/BOOT/KERNEL.SYS"
+#define FILEPATH "/boot/kernel.sys"
 
 // The Main function don't return
 void Main(void) {
-	Puts("Loading...\r\n");
+	Puts("Loading '" FILEPATH "'...\r\n");
 
 	// Read the MBR
-	DiskRead(BootDrive, 0, Mbr);
+	DiskRead(BootDrive, 0, 1, Mbr);
 	if (Mbr[510] != 0x55 && Mbr[511] != 0xAA) {
 		Puts("Invalid MBR!\r\n");
 		Panic();
@@ -49,17 +49,29 @@ void Main(void) {
 	if (FatFind(p, FILEPATH, &e) != 0) {
 		Puts("Failed to find " FILEPATH "\r\n");
 		Panic();
-	} else {
-		Puts("Size: 0x");
-		PutHexU32(e.FileSz);
-		Puts("\r\n");
 	}
 
 	void *file_content = (void *)0x100000;
-	if (FatRead(p, e, 0, e.FileSz, file_content) != e.FileSz) {
-		Puts("Failed to read " FILEPATH "\r\n");
-		Panic();
+
+	U32 remaining = e.FileSz;
+	U32 offset = 0;
+	U32 blkSz = 65536;
+	while (remaining > 0) {
+		U32 toRead = remaining > blkSz ? blkSz : remaining;
+		U32 r = FatRead(p, e, offset, toRead, file_content + offset);
+		if (r != toRead) {
+			Puts("\r\nFailed to read " FILEPATH "\r\n");
+			Panic();
+		}
+
+		remaining -= toRead;
+		offset += toRead;
+		Puts("\rLoaded 0x");
+		PutHexU32(e.FileSz - remaining);
+		Puts(" bytes of 0x");
+		PutHexU32(e.FileSz);
 	}
+	Puts("\r\n");
 
 	void (*func)(void) = file_content;
 	func();

@@ -65,23 +65,24 @@ void PutHexU32(U32 dw) {
 
 // Prints error message and halt system
 void Panic(void) {
-	Puts("Bootloader panic!\r\n");
+	Puts("Panic!\r\n");
 	Puts("System halted!\r\n");
 	for (;;);
 }
 
-// Read LBA sector using BIOS and copy to BUFFER
+// Read COUNT sectors at LBA using BIOS and copy to BUFFER
 // Useful for if you want to charge things above 1MiB
-void DiskRead(U8 drive, U32 lba, void *buffer) {
+void DiskRead(U8 drive, U32 lba, U16 count, void *buffer) {
 	void *lbuf = (void *)DISK_BUFFER;
-	Memset(lbuf, 0, 512);
-	Memset(buffer, 0, 512);
+	U32 size = count * SCT_SIZE;
+	Memset(lbuf, 0, size);
+	Memset(buffer, 0, size);
 
 	U8 ret;
 	for (int i = 0; i < 3; i++) {
-		ret = ExtendedDiskRead(drive, lba, lbuf);
+		ret = ExtendedDiskRead(drive, lba, count, lbuf);
 		if (ret == 0) {
-			Memcpy(buffer, lbuf, 512);
+			Memcpy(buffer, lbuf, size);
 			break;
 		} else if (i <= 2) {
 				DiskReset(drive);

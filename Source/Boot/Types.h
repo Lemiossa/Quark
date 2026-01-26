@@ -14,4 +14,6 @@ typedef int I32;
 typedef unsigned long long U64;
 typedef long long I64;
 
+#define NULL ((void *)0)
+
 #endif // TYPES_H

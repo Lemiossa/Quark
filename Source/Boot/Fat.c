@@ -5,6 +5,7 @@
 #include "Fat.h"
 #include "MemDefs.h"
 #include "Util.h"
+#include "Vga.h"
 
 // Returns 1 if cluster is end
 int FatClstIsEnd(struct FatPart p, U32 clst) {
@@ -85,12 +86,13 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 	struct FatPart p;
 
 	U8 vbr[SCT_SIZE];
-	DiskRead(drive, StartLBA, vbr);
+	DiskRead(drive, StartLBA, 1, vbr);
 
 	Memcpy(&p.Bpb, vbr, sizeof(struct Bpb));
 	Memcpy(&p.Ebpb, &vbr[sizeof(struct Bpb)], sizeof(union Ebpb));
 
 	if (p.Bpb.BytesPerSct != SCT_SIZE) {
+		Puts("Invalid sect size\r\n");
 		p.GFatType = PART_INV;
 		return 1;
 	}
@@ -101,10 +103,10 @@ int FatInit(U8 drive, U32 StartLBA, struct FatPart *out) {
 	p.GTotalScts = p.Bpb.TotalScts16 == 0 ? p.Bpb.TotalScts32 : p.Bpb.TotalScts16;
 	p.GFatSz = p.Bpb.SctsPerFat == 0 ? p.Ebpb.Ebpb32.SctsPerFat32 : p.Bpb.SctsPerFat;
 	p.GRootDirScts = ((p.Bpb.RootDirEnts * 32) + (SCT_SIZE - 1)) / SCT_SIZE;
+
 	p.GFatLba = StartLBA + p.Bpb.ResScts;
 	p.GDataLba = p.GFatLba + (p.Bpb.FatCount * p.GFatSz) + p.GRootDirScts;
-	p.GDataScts = p.GTotalScts -
-				(p.Bpb.ResScts + (p.Bpb.FatCount * p.GFatSz) + p.GRootDirScts);
+	p.GDataScts = p.GTotalScts - (p.Bpb.ResScts + (p.Bpb.FatCount * p.GFatSz) + p.GRootDirScts);
 	p.GRootLba = p.GDataLba - p.GRootDirScts;
 
 	U32 TotalClsts = p.GDataScts / p.Bpb.SctsPerClst;
@@ -143,15 +145,16 @@ U32 FatNextClst(struct FatPart p, U32 clst) {
 
 	U32 val = 0;
 	if (p.GFatType == PART_FAT12) {
-		DiskRead(p.Drive, fatSector, buf);
-		DiskRead(p.Drive, fatSector + 1, &buf[512]);
+		DiskRead(p.Drive, fatSector, 2, buf);
 		val = *(U32 *)&buf[entryOffset];
 		val = (clst & 1) ? val >> 4 : val & 0xFFF;
+		val &= 0xFFF;
 	} else if (p.GFatType == PART_FAT16) {
-		DiskRead(p.Drive, fatSector, buf);
+		DiskRead(p.Drive, fatSector, 1, buf);
 		val = *(U32 *)&buf[entryOffset];
+		val &= 0xFFFF;
 	} else if (p.GFatType == PART_FAT32) {
-		DiskRead(p.Drive, fatSector, buf);
+		DiskRead(p.Drive, fatSector, 1, buf);
 		val = *(U32 *)&buf[entryOffset];
 		val &= 0xFFFFFFF;
 	}
@@ -167,10 +170,8 @@ int FatFindInDir(struct FatPart p, U32 clst, struct FatDirEntry *out,
 				 char *filename) {
 	if (!filename)
 		return 1;
-	U32 curClst = clst;
 
-	if (clst == 0 && !(p.GFatType == PART_FAT12 || p.GFatType == PART_FAT16))
-		return 1;
+	U32 curClst = clst;
 
 	char fatname[11];
 	FilenameToFatname(filename, fatname);
@@ -180,17 +181,17 @@ int FatFindInDir(struct FatPart p, U32 clst, struct FatDirEntry *out,
 		for (U32 i = 0; i < scts; i++) {
 			U8 sct[SCT_SIZE];
 			U32 lba = curClst == 0 ? p.GRootLba + i : FatClstToLba(p, curClst) + i;
-			DiskRead(p.Drive, lba, sct);
+			DiskRead(p.Drive, lba, 1, sct);
 
-			for (int j = 0; j < SCT_SIZE; j += sizeof(struct FatDirEntry)) {
-				struct FatDirEntry *entry = (struct FatDirEntry *)&sct[j];
+			struct FatDirEntry *ents = (struct FatDirEntry *)sct;
 
-				if (entry->Name[0] == 0)
+			for (int j = 0; j < 16; j++) {
+				if (ents[j].Name[0] == 0)
 					return 1;
 
-				if (Memcmp(entry->Name, fatname, 11) == 0) {
+				if (Memcmp(ents[j].Name, fatname, 11) == 0) {
 					if (out)
-						*out = *entry;
+						*out = ents[j];
 					return 0;
 				}
 			}
@@ -227,7 +228,8 @@ int FatFind(struct FatPart p, const char *path, struct FatDirEntry *out) {
 
 		curClst = e.ClstLo;
 		if (p.GFatType == PART_FAT32) {
-			curClst |= ((e.ClstHi << 16) & 0xFFF);
+			curClst |= (e.ClstHi << 16);
+			curClst &= 0xFFFFFFF;
 		}
 	}
 
@@ -243,16 +245,13 @@ U32 FatRead(struct FatPart p, struct FatDirEntry e, U32 off, U32 n, void *d) {
 	if (e.ClstLo < 2 || !d)
 		return 0;
 
-	if (off >= e.FileSz)
-		return 0;
-
 	U32 clstSize = p.Bpb.SctsPerClst * SCT_SIZE;
 	U32 clst = e.ClstLo;
 	clst = e.ClstLo;
 	if (p.GFatType == PART_FAT32) {
-		clst |= ((e.ClstHi << 16) & 0xFFF);
+		clst |= (e.ClstHi << 16);
+		clst &= 0xFFFFFFF;
 	}
-
 
 	U32 skip = off / clstSize;
 	U32 offInClst = off % clstSize;
@@ -274,15 +273,12 @@ U32 FatRead(struct FatPart p, struct FatDirEntry e, U32 off, U32 n, void *d) {
 		U32 localOff = offInClst;
 		U8 *buf = (U8 *)CLST_BUFFER;
 
-		for (U32 i = 0; i < p.Bpb.SctsPerClst; i++) {
-			DiskRead(p.Drive, clstLba + i, &buf[i * SCT_SIZE]);
-		}
+		DiskRead(p.Drive, clstLba, p.Bpb.SctsPerClst, buf);
 
 		U32 maxInClst = clstSize - localOff;
 		U32 toRead = remaining < maxInClst ? remaining : maxInClst;
-		for (U32 i = 0; i < toRead; i++) {
+		for (U32 i = 0; i < toRead; i++)
 			dest[curOff + i] = buf[localOff + i];
-		}
 
 		remaining -= toRead;
 		totalRead += toRead;
