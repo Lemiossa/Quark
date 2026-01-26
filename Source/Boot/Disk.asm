@@ -59,7 +59,7 @@ GetDriveParameters:
 	XOR EAX, EAX
 	MOV AX, [.RET]
 
-	POP EBP
+	LEAVE
 	RET
 .RET: DW 0
 
@@ -113,7 +113,7 @@ ExtendedDiskRead:
 	XOR EAX, EAX
 	MOV AL, [.RET]
 
-	POP EBP
+	LEAVE
 	RET
 .RET: DB 0
 
