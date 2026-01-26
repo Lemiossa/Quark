@@ -9,6 +9,8 @@
 
 // The Main function don't return
 void Main(void) {
+	SetCurrentAttr(MAKE_VGA_COLOR(GRAY, BLACK));
+
 	GdtInit();
 	IdtInit();
 	PicRemap(0x20, 0x28);

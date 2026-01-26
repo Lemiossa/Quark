@@ -9,15 +9,13 @@
 #define VGA_HEIGHT 25
 
 U16 *Vga = (U16 *)0xB8000;
-U16 Cursor_x = 0;
-U16 Cursor_y = 0;
-U8 Current_attributes = 0x07;
+U16 CursorX = 0;
+U16 CursorY = 0;
+U8 CurrentAttributes = 0x07;
 
 // Text-mode-cursor https://wiki.osdev.org/Text_Mode_Cursor
 // Updates the cursor position
-void CursorUpdate(U16 x, U16 y) {
-	U16 pos = y * VGA_WIDTH + x;
-
+void CursorUpdate(U16 pos) {
 	OutU8(0x3D4, 0xF);
 	OutU8(0x3D5, (U8)pos & 0xFF);
 	OutU8(0x3D4, 0xE);
@@ -34,13 +32,23 @@ U16 GetCursorPos(void) {
 	return pos;
 }
 
+// Set the current attributes
+void SetCurrentAttr(U8 attr) {
+	CurrentAttributes = attr;
+}
+
+// Returns the current attributes
+U8 GetCurrentAttr(void) {
+	return CurrentAttributes;
+}
+
 // Put char C at X and Y position with current_attributes
 void Putcat(U16 x, U16 y, char c) {
 	if (x >= VGA_WIDTH || y >= VGA_HEIGHT)
 		return;
 
 	U8 uc = c;
-	Vga[y * VGA_WIDTH + x] = (Current_attributes << 8) | uc;
+	Vga[y * VGA_WIDTH + x] = (CurrentAttributes << 8) | uc;
 }
 
 // Scroll N lines the screen
@@ -61,30 +69,33 @@ void Scroll(U16 n) {
 // Print char C at current cursor position and move de Cursor, scrolls if needed
 void Putc(char c) {
 	U16 pos = GetCursorPos();
-	Cursor_y = pos / VGA_WIDTH;
-	Cursor_x = pos % VGA_WIDTH;
+	CursorY = pos / VGA_WIDTH;
+	CursorX = pos % VGA_WIDTH;
 	if (c == '\r') {
-		Cursor_x = 0;
+		CursorX = 0;
 	} else if (c == '\n') {
-		Cursor_y++;
+		CursorY++;
 	} else if (c == '\t') {
-		Cursor_x += 4;
+		CursorX += 4;
+	} else if (c == '\b') {
+		CursorX--;
 	} else {
-		Putcat(Cursor_x, Cursor_y, c);
-		Cursor_x++;
+		Putcat(CursorX, CursorY, c);
+		CursorX++;
 	}
 
-	if (Cursor_x >= VGA_WIDTH) {
-		Cursor_x = 0;
-		Cursor_y++;
+	if (CursorX >= VGA_WIDTH) {
+		CursorX = 0;
+		CursorY++;
 	}
 
-	if (Cursor_y >= VGA_HEIGHT) {
+	if (CursorY >= VGA_HEIGHT) {
 		Scroll(1);
-		Cursor_y = VGA_HEIGHT - 1;
+		CursorY = VGA_HEIGHT - 1;
 	}
 
-	CursorUpdate(Cursor_x, Cursor_y);
+	pos = CursorY * VGA_WIDTH + CursorX;
+	CursorUpdate(pos);
 }
 
 // Prints a string using putc
