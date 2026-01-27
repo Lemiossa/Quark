@@ -10,7 +10,9 @@ _START:
 	CLI
 	MOV ESP, STACK_TOP
 
+	PUSH EAX ; The bootloader sets EAX with boot info structure pointer
 	CALL Main
+	ADD ESP, 4
 
 HANG:
 	CLI

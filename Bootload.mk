@@ -5,7 +5,7 @@ BOOTSECT := $(BINDIR)/Boot/Bootsect.bin
 STAGE2 := $(BINDIR)/Boot/Stage2.bin
 STAGE2_ELF := $(BINDIR)/Boot/Stage2.elf
 
-BOOTLOADER_CFLAGS := -std=c11 -m32 -O2 \
+BOOTLOADER_CFLAGS := -std=c11 -m32 -O0 \
 					-ffreestanding -fno-stack-protector \
 					-Wall -Wextra \
 					-mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
@@ -14,6 +14,7 @@ BOOTLOADER_LDFLAGS := -melf_i386 -T$(SOURCEDIR)/Boot/Bootload.ld
 BOOTLOADER_SOURCE := \
 					Entry.asm \
 					Disk.asm \
+					E820.asm \
 					Util.c \
 					Vga.c \
 					Fat.c \

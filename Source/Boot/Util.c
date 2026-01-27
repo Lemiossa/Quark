@@ -63,6 +63,12 @@ void PutHexU32(U32 dw) {
 	PutHexU16(dw & 0xFFFF);
 }
 
+// Prints a hex qword
+void PutHexU64(U64 qw) {
+	PutHexU32(qw >> 32);
+	PutHexU32(qw & 0xFFFFFFFF);
+}
+
 // Prints error message and halt system
 void Panic(void) {
 	Puts("Panic!\r\n");

@@ -19,9 +19,18 @@ struct MbrPart {
 U8 Mbr[512];
 struct MbrPart *PartTable = (struct MbrPart *)&Mbr[446];
 int part = 0;
-void FilenameToFatname(char *filename, char *out);
+
+struct QuarkBootInfo {
+	struct E820Entry *E820Table;
+	U8 E820EntryCnt;
+};
+
+struct QuarkBootInfo BootInfo;
+struct E820Entry E820Table[128];
+U8 E820EntryCnt = 0;
 
 #define FILEPATH "/boot/kernel.sys"
+
 
 // The Main function don't return
 void Main(void) {
@@ -29,7 +38,7 @@ void Main(void) {
 
 	// Read the MBR
 	DiskRead(BootDrive, 0, 1, Mbr);
-	if (Mbr[510] != 0x55 && Mbr[511] != 0xAA) {
+	if (Mbr[510] != 0x55 || Mbr[511] != 0xAA) {
 		Puts("Invalid MBR!\r\n");
 		Panic();
 	}
@@ -73,8 +82,12 @@ void Main(void) {
 	}
 	Puts("\r\n");
 
-	void (*func)(void) = file_content;
-	func();
+	E820EntryCnt = E820GetTable(E820Table, 128);
+
+	BootInfo.E820Table = &E820Table[0];
+	BootInfo.E820EntryCnt = E820EntryCnt;
+
+	__asm__ volatile("jmp *%1" :: "a"(&BootInfo), "m"(file_content));
 
 	for (;;);
 }
