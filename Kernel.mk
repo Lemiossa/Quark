@@ -15,6 +15,7 @@ KERNEL_SOURCE := \
 					E820.c \
 					Pmm.c \
 					Vga.c \
+					Serial.c \
 					Util.c \
 					Gdt.c \
 					Idt.c \
