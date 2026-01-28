@@ -91,3 +91,19 @@ IsrNoErr 29
 IsrNoErr 30
 IsrNoErr 31
 
+IsrNoErr 32
+IsrNoErr 33
+IsrNoErr 34
+IsrNoErr 35
+IsrNoErr 36
+IsrNoErr 37
+IsrNoErr 38
+IsrNoErr 39
+IsrNoErr 40
+IsrNoErr 41
+IsrNoErr 42
+IsrNoErr 43
+IsrNoErr 44
+IsrNoErr 45
+IsrNoErr 46
+IsrNoErr 47

@@ -10,12 +10,31 @@
 #include "E820.h"
 #include "Pmm.h"
 #include "Serial.h"
-#include "Util.h"
+#include "Io.h"
 
 struct QuarkBootInfo {
 	struct E820Entry *E820Table;
 	U8 E820EntryCnt;
 };
+
+#define PITBASEFREQ 1193182
+
+U64 Ticks = 0;
+
+void PitHandler(struct IntFrame *f) {
+	(void)f;
+	Ticks++;
+}
+
+void PitInit(U16 freq) {
+	if (freq == 0) return;
+	U16 divisor = PITBASEFREQ/freq;
+	OutU8(0x43, 0b00110100);
+	OutU8(0x40, divisor & 0xFF); // Low byte
+	OutU8(0x40, (divisor >> 8) & 0xFF); // High byte
+	PicUnmaskIrq(0);
+	Irqs[0] = PitHandler;
+}
 
 // The Main function don't return
 void Main(struct QuarkBootInfo *bootInfo) {
@@ -24,26 +43,15 @@ void Main(struct QuarkBootInfo *bootInfo) {
 	E820Print(bootInfo->E820Table, bootInfo->E820EntryCnt);
 	PmmInit(bootInfo->E820Table, bootInfo->E820EntryCnt);
 
+	SerialInit(COM1, 3);
+
 	GdtInit();
 	IdtInit();
-	if (SerialInit(COM1, 3) == 0) {
-		Puts("Initialized Serial port 0x");
-		PutHexU16(COM1);
-		Puts("\r\n");
-	}
 	PicRemap(0x20, 0x28);
-
+	PitInit(100);
+	__asm__ volatile("sti");
 
 	Puts("Hello Kernel!\r\n");
-
-	Puts("Kernel size: 0x");
-	PutHexU32((U32)__END_ADDR - (U32)__START_ADDR);
-	Puts("\r\n");
-
-	void *ptr = (void *)PmmAllocPage();
-	Puts ("Allocated page: 0x");
-	PutHexU32((U32)ptr);
-	Puts("\r\n");
 
 	for (;;);
 }

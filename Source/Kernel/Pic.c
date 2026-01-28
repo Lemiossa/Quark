@@ -4,6 +4,8 @@
  */
 #include "Io.h"
 #include "Types.h"
+#include "Idt.h"
+#include "Pic.h"
 
 #define PIC1_COMMAND 0x20
 #define PIC2_COMMAND 0xA0
@@ -12,9 +14,17 @@
 
 #define PIC_EOI 0x20
 
+Irq Irqs[16];
+
+// Execute a IRQ
+void PicExecIrq(U8 IRQ, struct IntFrame *f) {
+	if (Irqs[IRQ])
+		Irqs[IRQ](f);
+}
+
 // Send PIC EOI
-void PicSendEoi(U8 irq) {
-	if (irq >= 8)
+void PicSendEoi(U8 IRQ) {
+	if (IRQ >= 8)
 		OutU8(PIC2_COMMAND, PIC_EOI);
 	OutU8(PIC1_COMMAND, PIC_EOI);
 }

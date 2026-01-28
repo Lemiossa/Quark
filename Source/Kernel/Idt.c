@@ -5,6 +5,7 @@
 #include "Vga.h"
 #include "Idt.h"
 #include "Types.h"
+#include "Pic.h"
 
 struct IdtEnt Idt[IDT_ENTRIES];
 struct Idtr Idtr;
@@ -36,6 +37,11 @@ void InterruptHandler(struct IntFrame *f) {
 		Puts(EXCEPTIONS[f->IntNo]);
 		Puts("\r\nSystem halted");
 		while (1) __asm__ volatile("cli;hlt");
+	}
+
+	if (f->IntNo >= 32 && f->IntNo <= 47) {
+		PicSendEoi(f->IntNo - 32);
+		PicExecIrq(f->IntNo - 32, f);
 	}
 }
 
@@ -72,6 +78,23 @@ extern void Isr29(void);
 extern void Isr30(void);
 extern void Isr31(void);
 
+extern void Isr32(void);
+extern void Isr33(void);
+extern void Isr34(void);
+extern void Isr35(void);
+extern void Isr36(void);
+extern void Isr37(void);
+extern void Isr38(void);
+extern void Isr39(void);
+extern void Isr40(void);
+extern void Isr41(void);
+extern void Isr42(void);
+extern void Isr43(void);
+extern void Isr44(void);
+extern void Isr45(void);
+extern void Isr46(void);
+extern void Isr47(void);
+
 // Initializes GDT
 void IdtInit(void) {
 	IdtSetGate(0, Isr0, 0x08, 0x8E);
@@ -106,6 +129,23 @@ void IdtInit(void) {
 	IdtSetGate(29, Isr29, 0x08, 0x8E);
 	IdtSetGate(30, Isr30, 0x08, 0x8E);
 	IdtSetGate(31, Isr31, 0x08, 0x8E);
+
+	IdtSetGate(32, Isr32, 0x08, 0x8E);
+	IdtSetGate(33, Isr33, 0x08, 0x8E);
+	IdtSetGate(34, Isr34, 0x08, 0x8E);
+	IdtSetGate(35, Isr35, 0x08, 0x8E);
+	IdtSetGate(36, Isr36, 0x08, 0x8E);
+	IdtSetGate(37, Isr37, 0x08, 0x8E);
+	IdtSetGate(38, Isr38, 0x08, 0x8E);
+	IdtSetGate(39, Isr39, 0x08, 0x8E);
+	IdtSetGate(40, Isr40, 0x08, 0x8E);
+	IdtSetGate(41, Isr41, 0x08, 0x8E);
+	IdtSetGate(42, Isr42, 0x08, 0x8E);
+	IdtSetGate(43, Isr43, 0x08, 0x8E);
+	IdtSetGate(44, Isr44, 0x08, 0x8E);
+	IdtSetGate(45, Isr45, 0x08, 0x8E);
+	IdtSetGate(46, Isr46, 0x08, 0x8E);
+	IdtSetGate(47, Isr47, 0x08, 0x8E);
 
 	Idtr.Base = (U32)&Idt[0];
 	Idtr.Size = (sizeof(struct IdtEnt) * IDT_ENTRIES) - 1;
