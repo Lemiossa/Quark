@@ -36,5 +36,6 @@ void CursorUpdate(U16 pos);
 void Putcat(U16 x, U16 y, char c);
 void Putc(char c);
 void Puts(const char *s);
+void Clear(void);
 
 #endif // VGA_H
