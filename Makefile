@@ -19,7 +19,11 @@ IMAGESIZE := 64M
 IMAGEFAT := 32
 IMAGE := $(BUILDDIR)/Quark.img
 
-QEMU_FLAGS := -drive file=$(IMAGE),if=ide,format=raw,media=disk -m 1G -serial stdio
+QEMU_FLAGS := \
+			-drive file=$(IMAGE),format=raw,if=ide,media=disk \
+			-cpu pentium3 \
+			-smp 1 \
+			-vga std
 BOOTLOADER := $(BINDIR)/Bootload.bin
 KERNEL := $(BINDIR)/Kernel.bin
 
@@ -32,7 +36,7 @@ clean:
 
 .PHONY: qemu
 qemu: $(IMAGE)
-	$(QEMU) $(QEMU_FLAGS)
+	$(QEMU) $(QEMU_FLAGS) -serial stdio
 
 # IMAGE =======================================================================
 
@@ -40,10 +44,10 @@ IMAGEROOT := $(BUILDDIR)/IMGROOT
 
 $(IMAGEROOT):
 	mkdir -p $@
-	mkdir -p $@/boot
-	cp $(KERNEL) $@/boot/Kernel.sys
 
 $(IMAGE): $(BOOTLOADER) $(KERNEL) $(IMAGEROOT)
+	mkdir -p $(IMAGEROOT)/boot
+	cp $(KERNEL) $(IMAGEROOT)/boot/Kernel.sys
 	mkdir -p $(dir $@)
 	dd if=/dev/zero of=$@ bs=512 count=63 status=progress
 	dd if=$(BOOTLOADER) of=$@ bs=1 status=progress conv=notrunc
