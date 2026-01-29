@@ -60,6 +60,11 @@ void Main(void) {
 		Panic();
 	}
 
+	E820EntryCnt = E820GetTable(E820Table, 128);
+
+	BootInfo.E820Table = &E820Table[0];
+	BootInfo.E820EntryCnt = E820EntryCnt;
+
 	void *file_content = (void *)0x100000;
 
 	U32 remaining = e.FileSz;
@@ -82,10 +87,6 @@ void Main(void) {
 	}
 	Puts("\r\n");
 
-	E820EntryCnt = E820GetTable(E820Table, 128);
-
-	BootInfo.E820Table = &E820Table[0];
-	BootInfo.E820EntryCnt = E820EntryCnt;
 
 	__asm__ volatile("jmp *%1" :: "a"(&BootInfo), "m"(file_content));
 
