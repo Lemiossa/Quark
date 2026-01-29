@@ -11,12 +11,12 @@
 #include "Pmm.h"
 #include "Serial.h"
 #include "Pit.h"
+#include "Acpi.h"
 
 struct MuonBootInfo {
 	struct E820Entry *E820Table;
 	U8 E820EntryCnt;
 };
-
 
 // The Main function don't return
 void Main(struct MuonBootInfo *bootInfo) {
@@ -27,8 +27,9 @@ void Main(struct MuonBootInfo *bootInfo) {
 	E820Print(bootInfo->E820Table, bootInfo->E820EntryCnt);
 	PmmInit(bootInfo->E820Table, bootInfo->E820EntryCnt);
 
-
 	GdtInit();
+	ACPIInit();
+
 	IdtInit();
 	PicRemap(0x20, 0x28);
 	PitInit(1000);
@@ -36,5 +37,6 @@ void Main(struct MuonBootInfo *bootInfo) {
 
 	Puts("Hello Kernel!\r\n");
 
-	for (;;);
+	for (;;) {
+	}
 }
