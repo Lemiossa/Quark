@@ -56,7 +56,19 @@ $(IMAGE): $(BOOTLOADER) $(KERNEL) $(IMAGEROOT)
 	$(MKFS) -F $(IMAGEFAT) -n "QUARK" $(basename $@).p1
 	mcopy -i $(basename $@).p1 -s $(IMAGEROOT)/* "::/"
 	dd if=$(basename $@).p1 >> $@
+ifeq ($(IMAGEFAT),12)
+	echo "label:dos\n63,$(IMAGESIZE),01,*\n" | $(SFDISK) $@
+else
+ifeq ($(IMAGEFAT),16)
 	echo "label:dos\n63,$(IMAGESIZE),0E,*\n" | $(SFDISK) $@
+else
+ifeq ($(IMAGEFAT),32)
+	echo "label:dos\n63,$(IMAGESIZE),1C,*\n" | $(SFDISK) $@
+else
+$(error Invalid FAT size)
+endif
+endif
+endif
 
 # BOOTLOADER ==================================================================
 
