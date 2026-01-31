@@ -60,7 +60,7 @@ void Main(void) {
 		Panic();
 	}
 
-	E820EntryCnt = E820GetTable(E820Table, 128);
+	E820EntryCnt = BiosE820GetTable(E820Table, 128);
 
 	BootInfo.E820Table = &E820Table[0];
 	BootInfo.E820EntryCnt = E820EntryCnt;

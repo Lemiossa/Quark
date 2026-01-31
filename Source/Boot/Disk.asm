@@ -6,9 +6,9 @@ SECTION .text
 %INCLUDE "Source/Boot/CpuModes.asm"
 
 ; Resets the disk controller
-; void DiskReset(U8 drive);
-GLOBAL DiskReset
-DiskReset:
+; void BiosDiskReset(U8 drive);
+GLOBAL BiosDiskReset
+BiosDiskReset:
 	PUSH EBP
 	MOV EBP, ESP
 
@@ -22,35 +22,41 @@ DiskReset:
 	ToProtectedMode
 	BITS 32
 
-	POP EBP
+	LEAVE
 	RET
 
 ; Get drive parameters
 ; Returns SPT | HPC
-; U16 GetDriveParameters(U8 drive);
-GLOBAL GetDriveParameters
-GetDriveParameters:
+; U16 BiosGetDriveParameters(U8 drive);
+GLOBAL BiosGetDriveParameters
+BiosGetDriveParameters:
 	PUSH EBP
 	MOV EBP, ESP
 
+	MOV DL, [EBP + 8]
 	PUSHAD
 	ToRealMode
 	BITS 16
+
+	PUSH ES
+	PUSH DI
 
 	XOR AX, AX
 	MOV ES, AX
 	MOV DI, AX
 
-	MOV DL, [EBP + 8]
 	MOV AH, 0x08
 	INT 0x13
 
 	AND CL, 0x3F
-
 	INC DH
-	MOV AH, CL
-	MOV AL, DH
+
+	MOV AL, CL
+	MOV AH, DH
 	MOV [.RET], AX
+
+	POP DI
+	POP ES
 
 	ToProtectedMode
 	BITS 32
@@ -63,48 +69,49 @@ GetDriveParameters:
 	RET
 .RET: DW 0
 
-; Read disk using EDD
+; Read disk using BIOS
 ; Returns error code(0 == no error)
-; U8 ExtendedDiskRead(U8 drive, U32 lba, U16 count, void *buffer);
-GLOBAL ExtendedDiskRead
-ExtendedDiskRead:
+; U8 BiosDiskRead(U8 drive, U16 cylinder, U8 head, U8 sector, U8 count, void *buffer);
+GLOBAL BiosDiskRead
+BiosDiskRead:
 	PUSH EBP
 	MOV EBP, ESP
-
-	MOV ECX, [EBP+12]
-	MOV [DISK_PACKET.LBA_LOW], ECX
-	MOV CX, [EBP+16]
-	MOV [DISK_PACKET.SECTORS], CX
-
-	MOV EDI, [EBP+20]
-
-	PUSH EDI
-	AND EDI, 0xF
-	MOV [DISK_PACKET.OFFSET], DI
-	POP EDI
-
-	PUSH EDI
-	SHR EDI, 4
-	MOV [DISK_PACKET.SEGMENT], DI
-	POP EDI
-
-
-	MOV DL, [EBP + 8]
 
 	PUSHAD
 	ToRealMode
 	BITS 16
 
-	PUSH DS
-	PUSH DI
+	PUSH BX
+	PUSH ES
 
-	MOV AH, 0x42
-	MOV SI, DISK_PACKET
+	; Linear addr to SEG:OFF
+	MOV EDI, [EBP+28]
+	PUSH EDI
+	SHR EDI, 4
+	MOV ES, DI
+	POP EDI
+
+	AND EDI, 0xF
+	MOV BX, DI
+
+	; Read
+	MOV AX, [EBP+12]
+	MOV CH, AL
+	MOV CL, AH
+	SHL CL, 6
+	AND CL, 0xC0
+	OR CL, [EBP+20]
+	MOV DH, [EBP+16]
+
+	MOV DL, [EBP+8]
+	MOV AH, 0x02
+	MOV AL, [EBP+24]
 	INT 0x13
-	MOV [.RET], AH
 
-	POP DI
-	POP DS
+	POP ES
+	POP BX
+
+	MOV [.RET], AH
 
 	ToProtectedMode
 	BITS 32
@@ -116,13 +123,3 @@ ExtendedDiskRead:
 	LEAVE
 	RET
 .RET: DB 0
-
-DISK_PACKET:
-	.SIZE: DB 0x10
-	.ZERO: DB 0
-	.SECTORS: DW 1
-	.OFFSET: DW 0
-	.SEGMENT: DW 0
-	.LBA_LOW: DD 0
-	.LBA_HIGH: DD 0
-

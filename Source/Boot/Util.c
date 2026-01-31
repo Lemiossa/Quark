@@ -78,25 +78,41 @@ void Panic(void) {
 
 // Read COUNT sectors at LBA using BIOS and copy to BUFFER
 // Useful for if you want to charge things above 1MiB
-void DiskRead(U8 drive, U32 lba, U16 count, void *buffer) {
+void DiskRead(U8 drive, U32 lba, U8 count, void *buffer) {
 	void *lbuf = (void *)DISK_BUFFER;
 	U32 size = count * SCT_SIZE;
 	Memset(lbuf, 0, size);
 	Memset(buffer, 0, size);
 
-	U8 ret;
+	U16 driveParams = BiosGetDriveParameters(drive);
+
+	U8 SPT = driveParams & 0xFF;
+	U8 HPC = (driveParams >> 8) & 0xFF;
+
+	if (SPT == 0 || HPC == 0) {
+		Puts("Failed to read sector: 0x");
+		PutHexU32(lba);
+		Puts("\r\nInvalid SPT or HPC of drive\r\n");
+		Panic();
+	}
+
+	U32 tmp = lba / SPT;
+	U32 sector = (lba % SPT) + 1;
+	U32 head = tmp % HPC;
+	U32 cylinder = tmp / HPC;
+
+	U8 ret = 0;
 	for (int i = 0; i < 3; i++) {
-		ret = ExtendedDiskRead(drive, lba, count, lbuf);
+		ret = BiosDiskRead(drive, cylinder, head, sector, count, lbuf);
 		if (ret == 0) {
 			Memcpy(buffer, lbuf, size);
 			break;
-		} else if (i <= 2) {
-				DiskReset(drive);
 		}
+		BiosDiskReset(drive);
 	}
 
 	if (ret != 0) {
-		Puts("Failed tu read sector: 0x");
+		Puts("Failed to read sector: 0x");
 		PutHexU32(lba);
 		Puts("\r\nError code: 0x");
 		PutHexU8(ret);

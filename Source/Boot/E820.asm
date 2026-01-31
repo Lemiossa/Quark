@@ -7,9 +7,9 @@ SECTION .text
 
 ; Gets a E820 Table
 ; Returns total entries
-; U8 E820GetTable(struct E820Entry *out, U8 max);
-GLOBAL E820GetTable
-E820GetTable:
+; U8 BiosE820GetTable(struct E820Entry *out, U8 max);
+GLOBAL BiosE820GetTable
+BiosE820GetTable:
 	PUSH EBP
 	MOV EBP, ESP
 	MOV EDI, [EBP+8]
