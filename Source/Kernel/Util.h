@@ -17,4 +17,7 @@ int Memcmp(const void *s1, const void *s2, U32 n);
 
 U8 Checksum(U8 *data, U32 len);
 
+void SleepTicks(U64 N);
+void Beep(U16 freq, U64 ticks);
+
 #endif // UTIL_H

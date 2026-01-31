@@ -5,6 +5,8 @@
 #include "Types.h"
 #include "Vga.h"
 #include "Util.h"
+#include "Pit.h"
+#include "Pcspk.h"
 
 const char *PrintChars = "0123456789ABCDEF";
 
@@ -76,3 +78,21 @@ U8 Checksum(U8 *data, U32 len) {
 	}
 	return sum;
 }
+
+// Sleep N ticks
+// Busy Wait
+void SleepTicks(U64 N) {
+	U64 start = PITGetTicks();
+	while ((PITGetTicks() - start) < N);
+}
+
+// Plays a beep sound at FREQ for TICKS
+void Beep(U16 freq, U64 ticks) {
+	if (freq == 0 || ticks == 0)
+		return;
+	PcspkSetFreq(freq);
+	PcspkEnable();
+	SleepTicks(ticks);
+	PcspkDisable();
+}
+

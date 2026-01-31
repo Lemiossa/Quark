@@ -12,25 +12,12 @@
 #include "Serial.h"
 #include "Pit.h"
 #include "Kbd.h"
-#include "Io.h"
+#include "Util.h"
 
 struct MuonBootInfo {
 	struct E820Entry *E820Table;
 	U8 E820EntryCnt;
 };
-
-// Sets PCSPK Frequency
-void PcspkSetFreq(U16 freq) {
-	PITSetFreq(freq, PIT2);
-	U8 tmp = InU8(0x61);
-	OutU8(0x61, tmp | 3);
-}
-
-// Turn of PCSPK sound
-void PcspkDisable(void) {
-	U8 tmp = InU8(0x61);
-	OutU8(0x61, tmp & 0xFC);
-}
 
 // The Main function don't return
 void Main(struct MuonBootInfo *bootInfo) {
@@ -49,6 +36,7 @@ void Main(struct MuonBootInfo *bootInfo) {
 	KbdInit();
 
 	__asm__ volatile("sti");
+	Beep(440, 500);
 
 	Puts("Hello Kernel!\r\n");
 

@@ -24,6 +24,7 @@ KERNEL_SOURCE := \
 					Pit.c \
 					Panic.c \
 					Kbd.c \
+					Pcspk.c \
 					Main.c
 KERNEL_SOURCE := $(addprefix $(KERNEL_SOURCEDIR)/Kernel/,$(KERNEL_SOURCE))
 
